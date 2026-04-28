@@ -205,7 +205,7 @@ echo "number of sequences : ${num_of_seq}" >> "${name}"_stats.txt
 if [[ ! -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -gt 0 && $umis -gt 0 ]]
 	then
 		echo "You have a fastq.gz file and have UMIs and adapters and did not provide a rRNA genome"
-		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort --parallel="$threads" \
+		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort \
 		| uniq -c | sed 's/\s\s//g' | awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		cutadapt -u "$umis" -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
 		 -o "${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt	
@@ -219,7 +219,7 @@ if [[ ! -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -gt 0 && $u
 elif [[ ! -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -gt 0 && $umis -eq 0 ]]
 	then
 		echo "You have a fastq.gz file and dont provide UMIs and rRNA genome  and provide adapters a"
-		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort --parallel="$threads" \
+		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort \
 		| uniq -c | sed 's/\s\s//g' | awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		cutadapt -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
 		 -o "${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt	
@@ -234,7 +234,7 @@ elif [[ ! -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -gt 0 && 
 elif [[ ! -f ${rRNA_genome}/SAindex && $ext == "fastq" && ${#three_adapt} -gt 0 && $umis -gt 0 ]]
 	then
 		echo "You have a fastq file and have UMIs and adapters and did not provide a rRNA genome"
-		awk 'NR%4==2' "${name}".fastq | sort --parallel="$threads" | uniq -c | sed 's/\s\s//g' \
+		awk 'NR%4==2' "${name}".fastq | sort | uniq -c | sed 's/\s\s//g' \
 		| awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		cutadapt -u "$umis" -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
 		-o "${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt	
@@ -257,7 +257,7 @@ elif [[ ! -f ${rRNA_genome}/SAindex && $ext == "fasta" && ${#three_adapt} -eq 0 
 elif [[ -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -gt 0 && $umis -gt 0 ]]
 	then
 				echo "You have a fastq.gz file and have UMIs and adapters and provided a rRNA genome"
-		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort --parallel="$threads" | uniq -c \
+		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort | uniq -c \
 		| sed 's/\s\s//g' | awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		cutadapt -u "$umis" -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
 		-o pre_rRNA_dep_"${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt
@@ -279,7 +279,7 @@ elif [[ -f ${rRNA_genome}/SAindex && $ext == "fastq" && ${#three_adapt} -gt 0 &&
 	then
 			echo "You have a fastq file and have UMIs and adapters and provided a rRNA genome"
 			
-		awk 'NR%4==2' "${name}".fastq | sort --parallel="$threads" | uniq -c | sed 's/\s\s//g' \
+		awk 'NR%4==2' "${name}".fastq | sort | uniq -c | sed 's/\s\s//g' \
 		| awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		cutadapt -u "$umis" -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
 		-o pre_rRNA_dep_"${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt	
@@ -320,7 +320,7 @@ elif [[ ! -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -eq 0 && 
 	then
 		echo "You have a fastq.gz file and not provie UMIs, adapters and a rRNA genome"
 	
-		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort --parallel="$threads" \
+		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort \
 		| uniq -c | sed 's/\s\s//g' | awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		echo "aligning sequences to genome" >> "${name}".log
   	STAR --outFilterMismatchNoverLmax 0.05 --outFilterMatchNmin 16 --outFilterMultimapScoreRange 0 \
@@ -333,7 +333,7 @@ elif [[ ! -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -eq 0 && 
 elif [[ -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -eq 0 && $umis -eq 0 ]]
 	then
 	echo "You have a fastq.gz file and no UMIs and adapters and provided a rRNA genome"
-		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort --parallel="$threads" \
+		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort \
 		| uniq -c | sed 's/\s\s//g' | awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		echo "aligning sequences to rRNA_genome" >> "${name}".log
 	STAR --outFilterMismatchNoverLmax 0.05 --outFilterMatchNmin 16 --outFilterMultimapScoreRange 0 \
@@ -352,7 +352,7 @@ mv rRNA_aligned_"${name}"Unmapped.out.mate1 rRNA_depleted_"${name}"_trimmed.fast
 elif [[ -f ${rRNA_genome}/SAindex && $ext == "gz" && ${#three_adapt} -gt 0 && $umis -eq 0 ]]
 	then
 				echo "You have a fastq.gz file and have UMIs and adapters and provided a rRNA genome"
-		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort --parallel="$threads" | uniq -c \
+		gzip -dc "${name}".fastq.gz | awk 'NR%4==2' | sort | uniq -c \
 		| sed 's/\s\s//g' | awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
 		cutadapt -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
 		-o pre_rRNA_dep_"${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt
@@ -577,17 +577,17 @@ factor=50
 
 cat "${name}".groups_normal.bed "${name}".groups_normal_sqrt.bed | bedtools sort | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
   else if ( $1 != prev1 ||$6 != prev6 || sqrt(($2-prev3)^2) > var*log((prev11/$11))/log(10) ) {OFS="\t";print $0} \
-  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | tac | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
+  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | sed -n '1!G;h;$p' | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
   else if ( $1 != prev1 ||$6 != prev6 || sqrt(($2-prev3)^2) > var*log((prev11/$11))/log(10) ) {OFS="\t";print $0} \
-  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | tac | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
+  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | sed -n '1!G;h;$p' | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
   else if ( $1 != prev1 ||$6 != prev6 || sqrt(($2-prev3)^2) > var*log((prev11/$11))/log(10) ) {OFS="\t";print $0} \
-  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | tac | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
+  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | sed -n '1!G;h;$p' | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
   else if ( $1 != prev1 ||$6 != prev6 || sqrt(($2-prev3)^2) > var*log((prev11/$11))/log(10) ) {OFS="\t";print $0} \
-  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | tac | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
+  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | sed -n '1!G;h;$p' | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
   else if ( $1 != prev1 ||$6 != prev6 || sqrt(($2-prev3)^2) > var*log((prev11/$11))/log(10) ) {OFS="\t";print $0} \
-  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | tac | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
+  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | sed -n '1!G;h;$p' | awk -F "\t" -v var=$factor '{if (NR == 1) {prev1=$1;prev3=$3;prev6=$6;prev11=$11; {OFS="\t";print $0}} \
   else if ( $1 != prev1 ||$6 != prev6 || sqrt(($2-prev3)^2) > var*log((prev11/$11))/log(10) ) {OFS="\t";print $0} \
-  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | tac | awk -F "\t" -v var=$factor '{OFS="\t"; print $1,$2,$3,$5,".",$6,$7,$8,$9,$10,$11}' > "${name}"_filt.groups
+  ;prev1=$1;prev3=$3;prev6=$6;prev11=$11 }' | sed -n '1!G;h;$p' | awk -F "\t" -v var=$factor '{OFS="\t"; print $1,$2,$3,$5,".",$6,$7,$8,$9,$10,$11}' > "${name}"_filt.groups
  
  
  
