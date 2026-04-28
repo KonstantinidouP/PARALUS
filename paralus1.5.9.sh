@@ -65,7 +65,7 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   -a  Your 3' adapter. Default: No adapter
   -d  Your 5' adapter. Default: GTTCAGAGTTCTACAGTCCGACGATC
   -u  Number of wildcards anchored to the 5' end of the sequence. Default: 0
-     (do not add this if 5' adapter is barcoded and ends with UMIs)
+     (do not add this if 5' adapter is barcoded)
   -p  Threads. Default: 8 dont use more than 12!! else star wont run
   -e  rRNA genome to pre map sequnces and provide % of rRNA reads 
   		May build one like this:
