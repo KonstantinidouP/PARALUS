@@ -43,65 +43,119 @@ Follow the instructions below for your environment.
 
 ---
 
-### A — Local machine (Mac/Linux), install with conda
+### A — Apple Silicon Mac (M1/M2/M3/M4)
 
-If you don't have conda, first install [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
-
-Then create a dedicated environment for PARALUS:
+If you don't have conda, install Miniconda. Download the **arm64** installer:
 
 ```bash
-conda create -n paralus -c bioconda -c conda-forge \
-    star=2.7.2b \
-    samtools=1.17 \
-    bedtools=2.29.2 \
-    cutadapt \
-    python \
-    perl
-conda activate paralus
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+shasum -a 256 Miniconda3-latest-MacOSX-arm64.sh
+bash Miniconda3-latest-MacOSX-arm64.sh
+source ~/.zshrc
 ```
 
-> **Note for Apple Silicon users (M1/M2/M3/M4):** Specific versions of some tools may not be available for the arm64 architecture. If the command above fails with a `PackagesNotFoundError`, drop the version pins and let conda select the latest compatible versions:
-> ```bash
-> conda create -n paralus -c bioconda -c conda-forge \
->     star samtools bedtools cutadapt python perl
-> conda activate paralus
-> ```
-
-Activate the environment before each run:
+Create a conda environment with all dependencies **except STAR**:
 
 ```bash
-conda activate paralus
+conda create -n rnaseq -c bioconda -c conda-forge     samtools bedtools cutadapt python perl
+conda activate rnaseq
+```
+
+> **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`.
+
+**STAR requires special handling on Apple Silicon — the conda build does not work.**
+
+The bioconda ARM64 build of STAR has a confirmed bug where it silently reads 0 input reads. The root cause is that the binary uses `vfork()` to spawn child processes for reading input, and macOS restricts this in ad-hoc signed binaries. STAR must be compiled from source:
+
+**1. Install Homebrew and GNU gcc**
+
+Install Homebrew from https://brew.sh if you don't have it, then:
+
+```bash
+brew install gcc
+ls /opt/homebrew/bin/g++*   # note the version, e.g. g++-15
+```
+
+**2. Clone and compile STAR**
+
+```bash
+cd ~
+git clone https://github.com/alexdobin/STAR.git
+cd STAR/source
+make STARforMacStatic CXX=/opt/homebrew/bin/g++-15 CXXFLAGS_SIMD=
+```
+
+Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` suppresses the `-mavx2` flag, which is x86-only and does not exist on ARM64 — this does not affect performance.
+
+**3. Install into conda environment**
+
+```bash
+cp ~/STAR/source/STAR ~/miniconda3/envs/rnaseq/bin/STAR
+```
+
+**4. Verify**
+
+```bash
+conda activate rnaseq
+STAR --version
 ```
 
 ---
 
-### B — Shared server (e.g. pinbot), install with conda
+### B — Linux local machine (Intel/AMD x86)
 
-If conda is already available on the server, the same approach as above applies. If not, install Miniconda in your home directory:
+If you don't have conda, first install Miniconda. Verify the integrity of the installer by comparing the SHA256 hash shown in your terminal with the one listed at https://docs.anaconda.com/miniconda/miniconda-hashes/:
+
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+shasum -a 256 Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+```
+
+Follow the prompts: press Space to scroll through the license, type `yes` to accept, press Enter to confirm the default install location, and type `yes` to initialize conda.
+
+Create the environment with all dependencies including STAR:
+
+```bash
+conda create -n rnaseq -c bioconda -c conda-forge     star=2.7.2b     samtools=1.17     bedtools=2.29.2     cutadapt     python     perl
+conda activate rnaseq
+```
+
+Activate before each run:
+
+```bash
+conda activate rnaseq
+```
+
+---
+
+### C — Shared server (e.g. pinbot), install with conda
+
+If conda is not already available, install Miniconda in your home directory:
 
 ```bash
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
-# Follow the prompts, then restart your shell or run:
 source ~/.bashrc
 ```
 
 Then create and activate the environment:
 
 ```bash
-conda create -n paralus -c bioconda -c conda-forge \
-    star=2.7.2b \
-    samtools=1.17 \
-    bedtools=2.29.2 \
-    cutadapt \
-    python \
-    perl
-conda activate paralus
+conda create -n rnaseq -c bioconda -c conda-forge     star=2.7.2b     samtools=1.17     bedtools=2.29.2     cutadapt     python     perl
+conda activate rnaseq
+```
+
+Activate before each run:
+
+```bash
+conda activate rnaseq
 ```
 
 ---
 
-### C — HPC cluster (e.g. Biowulf/NIH), use module load
+### D — HPC cluster (e.g. Biowulf/NIH), use module load
 
 On clusters that use the `module` system, load the required tools before running PARALUS:
 
@@ -114,9 +168,6 @@ module load python
 ```
 
 Add these `module load` lines to the top of your submission script (see `RunParalus_for_hg38.sh` for an example). The exact module names may vary by cluster — check available versions with `module avail star`.
-
----
-
 ## Installation
 
 No installation is required. Clone the repository and run the scripts directly:
@@ -222,9 +273,9 @@ Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed
 
 ### Step 2b — Download rRNA sequences and build an rRNA index (optional)
 
-This step is only needed if you want to use the rRNA depletion option in PARALUS (the `-e` flag). It removes rRNA-mapping reads before genome alignment, which can significantly improve the signal-to-noise ratio in your data.
+This step is only needed if you want to use the rRNA depletion option in PARALUS (the `-e` flag). It removes rRNA-mapping reads before genome alignment, which can significantly improve the signal-to-noise ratio in your data. For this you will need to build and index an rRNA genome using STAR.
 
-You will need two rRNA FASTA files from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide):
+Below are instructions for where to find the human rRNA sequences. Both files are available from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide):
 
 **1. The 45S rDNA repeat unit** — contains the 18S, 5.8S, and 28S rRNA sequences:
 - Go to https://www.ncbi.nlm.nih.gov/nuccore/U13369.1
@@ -244,10 +295,10 @@ cat U13369.1.fasta X12811.1.fasta > rRNA.fa
 
 # Build STAR index
 mkdir /path/to/rRNA_index
-STAR --runMode genomeGenerate      --genomeDir /path/to/rRNA_index      --genomeFastaFiles rRNA.fa      --runThreadN 6      --genomeSAindexNbases 10
+STAR --runMode genomeGenerate      --genomeDir /path/to/rRNA_index      --genomeFastaFiles rRNA.fa      --runThreadN 6      --genomeSAindexNbases 6
 ```
 
-> **Note:** The `--genomeSAindexNbases 10` flag is required here because the rRNA genome is very small compared to a full genome. Without it STAR will throw an error.
+> **Note:** The `--genomeSAindexNbases` flag is required for small genomes. According to the STAR manual, the correct value should be scaled down using `min(14, log2(GenomeLength)/2 - 1)`. For the combined human rRNA sequences (~43 kb total), this gives a value of 6. If you use different rRNA sequences, adjust accordingly. Because the rRNA genome is so small, indexing completes almost instantly regardless of the number of threads used.
 
 Pass the rRNA index folder to PARALUS with the `-e` flag.
 
