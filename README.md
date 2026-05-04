@@ -21,12 +21,30 @@ A companion script, **masterchef**, builds the custom annotation BED file requir
 - Optional rRNA depletion by pre-mapping to an rRNA genome index
 - T-to-C crosslink site extraction from PAR-CLIP data
 - Two-stage peak calling based on read distribution modeling (normal and non-normal clusters)
-- Satellite peak filtering using a Tukey-inspired distance factor
 - Genomic annotation with priority-ranked feature assignment (3ss > 5ss > start codon > stop codon > 3'UTR > 5'UTR > CDS > exon > intron)
-- 5-mer and tri-3-mer enrichment analysis at binding sites vs. background
+- 5-mer enrichment analysis at binding sites vs. background
 - Per-sample statistics report
 
 ---
+
+## Performance & Accessibility
+
+PARALUS is designed to be fast, self-contained, and accessible — running on both Linux servers and local Mac machines with a single command and no workflow manager, containers, or cluster required.
+
+On an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads, a full PAR-CLIP run on a 512 MB FASTQ file (~8.8 million reads) completes in approximately **15 minutes**, performing the following steps end to end:
+
+- Read collapsing, UMI trimming, and adapter removal
+- Optional rRNA depletion by pre-mapping to an rRNA genome
+- Genome alignment against hg38
+- T-to-C crosslink site extraction at single-nucleotide resolution
+- Two-stage peak calling with read distribution modeling
+- Full genomic annotation with priority-ranked feature assignment
+- Sequence extraction at binding sites
+- 5-mer enrichment analysis at binding sites vs. background
+
+Many comparable CLIP analysis tools require multiple separate steps, different software environments, and are often limited to Linux clusters. PARALUS performs all of these steps in a single command, making it practical for everyday use on a local machine.
+
+Runtime is consistent and reproducible across runs. Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk I/O speed and available RAM can be as important as CPU core count — a fast SSD and sufficient RAM to cache large files like the genome FASTA in memory will improve performance significantly. For large datasets or batch processing of multiple samples, running on a Linux server is recommended.
 
 ## Dependencies
 
