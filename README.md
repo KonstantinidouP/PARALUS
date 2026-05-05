@@ -31,7 +31,14 @@ A companion script, **masterchef**, builds the custom annotation BED file requir
 
 PARALUS is designed to be fast, self-contained, and accessible — running on both Linux servers and local Mac machines with a single command and no workflow manager, containers, or cluster required.
 
-On an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads, a full PAR-CLIP run on a 512 MB FASTQ file (~8.8 million reads) completes in approximately **15 minutes**, performing the following steps end to end:
+On an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads, PARALUS was benchmarked on two datasets of different sizes, both completing on a local machine without a cluster:
+
+| Dataset size | Approx. reads | Runtime | CPU utilization |
+|---|---|---|---|
+| 512 MB FASTQ.gz | ~8.8 million | ~15 minutes | 129% |
+| 5 GB FASTQ.gz | ~10x larger | ~61 minutes | 152% |
+
+Notably, a 10x increase in file size results in only a ~4x increase in runtime, reflecting favorable scaling behavior. The pipeline performs the following steps end to end:
 
 - Read collapsing, UMI trimming, and adapter removal
 - Optional rRNA depletion by pre-mapping to an rRNA genome
