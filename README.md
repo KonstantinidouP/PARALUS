@@ -262,7 +262,7 @@ bash paralus_1.7.1.sh \
 
 | File | Description |
 |------|-------------|
-| `*.clusters.csv` | Main output — annotated binding clusters with crosslink statistics, gene name, annotation, biotype, and binding sequence |
+| `*.clusters.csv` | Main output — annotated binding clusters with crosslink statistics, gene name, feature, biotype, and binding sequence |
 | `*.clusters.bed` | BED format version of the clusters file |
 | `*.aligned_TtoC.bam` | BAM file containing only T-to-C crosslink-supporting reads |
 | `*.aligned_TtoC.bam.bai` | Index for the TtoC BAM file |
