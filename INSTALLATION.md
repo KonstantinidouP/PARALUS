@@ -125,6 +125,13 @@ Clone the repository to any location on your machine — PARALUS is a bash scrip
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
+chmod +x paralus_1.7.1.sh
+```
+
+To view all available options:
+
+```bash
+./paralus_1.7.1.sh --help
 ```
 
 Before running PARALUS, make sure all dependencies are available in your environment. If using conda:
