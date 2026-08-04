@@ -8,7 +8,7 @@ This document provides detailed installation instructions for different environm
 
 STAR is the most environment-sensitive dependency. We recommend installing it from the official pre-compiled static binary rather than via conda, as this avoids version conflicts and has been tested to work reliably.
 
-### Linux (Intel/AMD x86)
+### Linux
 
 Download and install the pre-compiled static binary from the STAR GitHub releases page:
 
@@ -118,6 +118,19 @@ Run these lines before running PARALUS or add them to the top of your submission
 
 ---
 
-## Shared servers (e.g. pinbot)
+## Installing PARALUS
 
-If conda is not already available, install Miniconda in your home directory following the Linux instructions above, then create the `rnaseq` environment as described.
+Clone the repository to any location on your machine — PARALUS is a bash script and does not need to be installed in the conda environment:
+
+```bash
+git clone https://github.com/KonstantinidouP/PARALUS.git
+cd PARALUS
+```
+
+Before running PARALUS, make sure all dependencies are available in your environment. If using conda:
+
+```bash
+conda activate rnaseq
+```
+
+On HPC clusters, load the required modules as described above instead.
