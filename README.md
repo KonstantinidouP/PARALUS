@@ -55,7 +55,6 @@ PARALUS requires the following tools installed in your environment:
 - [bedtools](https://bedtools.readthedocs.io/) (tested with v2.29.2)
 - [cutadapt](https://cutadapt.readthedocs.io/)
 - python3
-- perl
 - matplotlib (OPTIONAL — required for PDF plot output)
 - numpy (OPTIONAL — required for PDF plot output)
 
@@ -63,7 +62,7 @@ For Mac, Linux local machines and shared Linux servers, all dependencies can be 
 
 ```bash
 conda create -n rnaseq -c bioconda -c conda-forge \
-    star samtools bedtools cutadapt python perl matplotlib numpy
+    star samtools bedtools cutadapt python matplotlib numpy
 conda activate rnaseq
 ```
 
