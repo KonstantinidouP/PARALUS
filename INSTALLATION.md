@@ -1,52 +1,34 @@
-# PARALUS — Detailed Installation Guide
+# PARALUS — Dependencies Installation Guide
 
-This document provides detailed installation instructions for different environments.
-
----
-
-PARALUS requires the following tools:
-
-> **Optional — PDF plots:** PARALUS can generate k-mer enrichment and metagene plots as PDF files if `python3` with `matplotlib` and `numpy` are available in your environment. If they are not found, the pipeline skips the plots gracefully and notes it in the `_stats.txt` file — the core analysis is unaffected. To enable plots, install them in your conda environment:
-> ```bash
-> conda install -c conda-forge matplotlib numpy
-> ```
-
-- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.2b)
-- [samtools](http://www.htslib.org/) (tested with v1.17)
-- [bedtools](https://bedtools.readthedocs.io/) (tested with v2.29.2)
-- [cutadapt](https://cutadapt.readthedocs.io/)
-- python
-- perl (standard installation, used for k-mer generation)
-
-Follow the instructions below for your environment.
+This document provides detailed installation instructions for different environments. For a quick start, see the main [README.md](README.md).
 
 ---
 
-### A — Apple Silicon Mac (M1/M2/M3/M4)
+## Installing STAR
 
-If you don't have conda, install Miniconda. Download the **arm64** installer:
+STAR is the most environment-sensitive dependency. We recommend installing it from the official pre-compiled static binary rather than via conda, as this avoids version conflicts and has been tested to work reliably.
 
-```bash
-curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
-shasum -a 256 Miniconda3-latest-MacOSX-arm64.sh
-bash Miniconda3-latest-MacOSX-arm64.sh
-source ~/.zshrc
-```
+### Linux (Intel/AMD x86)
 
-Create a conda environment with all dependencies **except STAR**:
+Download and install the pre-compiled static binary from the STAR GitHub releases page:
 
 ```bash
-conda create -n rnaseq -c bioconda -c conda-forge     samtools bedtools cutadapt python perl
-conda activate rnaseq
+wget https://github.com/alexdobin/STAR/releases/download/2.7.11b/STAR_2.7.11b.zip
+unzip STAR_2.7.11b.zip
+sudo cp STAR_2.7.11b/Linux_x86_64_static/STAR /usr/local/bin/
 ```
 
-> **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`.
+Verify:
 
-**STAR requires special handling on Apple Silicon — the conda build does not work.**
+```bash
+STAR --version
+```
 
-The bioconda ARM64 build of STAR has a confirmed bug where it silently reads 0 input reads. The root cause is that the binary uses `vfork()` to spawn child processes for reading input, and macOS restricts this in ad-hoc signed binaries. STAR must be compiled from source:
+### Apple Silicon Mac (M1/M2/M3/M4) — compile from source
 
-**1. Install Homebrew and GNU gcc**
+
+
+1. Install Homebrew and GNU gcc
 
 Install Homebrew from https://brew.sh if you don't have it, then:
 
@@ -55,35 +37,35 @@ brew install gcc
 ls /opt/homebrew/bin/g++*   # note the version, e.g. g++-15
 ```
 
-**2. Clone and compile STAR**
+2. Clone and compile STAR
 
 ```bash
 cd ~
 git clone https://github.com/alexdobin/STAR.git
-cd STAR/source
+cd STAR
+git checkout 2.7.11b
+cd source
 make STARforMacStatic CXX=/opt/homebrew/bin/g++-15 CXXFLAGS_SIMD=
 ```
 
-Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` suppresses the `-mavx2` flag, which is x86-only and does not exist on ARM64 — this does not affect performance.
+Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` suppresses the `-mavx2` flag, which is x86-only and does not exist on ARM64 — this does not affect performance. Compilation takes a few minutes; warnings are harmless.
 
-**3. Install into conda environment**
-
-```bash
-cp ~/STAR/source/STAR ~/miniconda3/envs/rnaseq/bin/STAR
-```
-
-**4. Verify**
+3. Install and verify:
 
 ```bash
-conda activate rnaseq
+sudo cp ~/STAR/source/STAR /usr/local/bin/
 STAR --version
 ```
 
 ---
 
-### B — Linux local machine (Intel/AMD x86)
+## Installing all other dependencies via conda
 
-If you don't have conda, first install Miniconda. Verify the integrity of the installer by comparing the SHA256 hash shown in your terminal with the one listed at https://docs.anaconda.com/miniconda/miniconda-hashes/:
+### Installing Miniconda
+
+If you don't have conda, install Miniconda first.
+
+**Linux:**
 
 ```bash
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -92,41 +74,27 @@ bash Miniconda3-latest-Linux-x86_64.sh
 source ~/.bashrc
 ```
 
-Follow the prompts: press Space to scroll through the license, type `yes` to accept, press Enter to confirm the default install location, and type `yes` to initialize conda.
-
-Create the environment with all dependencies including STAR:
+**Mac (Apple Silicon):**
 
 ```bash
-conda create -n rnaseq -c bioconda -c conda-forge     star=2.7.2b     samtools=1.17     bedtools=2.29.2     cutadapt     python     perl
-conda activate rnaseq
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+shasum -a 256 Miniconda3-latest-MacOSX-arm64.sh
+bash Miniconda3-latest-MacOSX-arm64.sh
+source ~/.zshrc
 ```
 
-Activate before each run:
+Verify the installer hash against the one listed at https://docs.anaconda.com/miniconda/miniconda-hashes/ before running it.
+
+### Create a conda environment and install dependencies
 
 ```bash
-conda activate rnaseq
+conda create -n rnaseq -c bioconda -c conda-forge \
+    samtools bedtools cutadapt python matplotlib numpy
 ```
 
----
+> **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`.
 
-### C — Shared server (e.g. pinbot), install with conda
-
-If conda is not already available, install Miniconda in your home directory:
-
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-source ~/.bashrc
-```
-
-Then create and activate the environment:
-
-```bash
-conda create -n rnaseq -c bioconda -c conda-forge     star=2.7.2b     samtools=1.17     bedtools=2.29.2     cutadapt     python     perl
-conda activate rnaseq
-```
-
-Activate before each run:
+### Activate the conda environment before running PARALUS
 
 ```bash
 conda activate rnaseq
@@ -134,16 +102,22 @@ conda activate rnaseq
 
 ---
 
-### D — HPC cluster (e.g. Biowulf/NIH), use module load
+## HPC clusters (e.g. Biowulf/NIH) — module load
 
-On clusters that use the `module` system, load the required tools before running PARALUS:
+On clusters that use the `module` system, load each dependency before running PARALUS. The exact module names may vary by cluster — check available versions with `module avail star`:
 
 ```bash
-module load star/2.7.2b
-module load samtools/1.17
-module load bedtools2/2.29.2
+module load star/2.7.11b
+module load samtools
+module load bedtools2
 module load cutadapt
 module load python
 ```
 
-Add these `module load` lines to the top of your submission script (see `RunParalus_for_hg38.sh` for an example). The exact module names may vary by cluster — check available versions with `module avail star`.
+Run these lines before running PARALUS or add them to the top of your submission script.
+
+---
+
+## Shared servers (e.g. pinbot)
+
+If conda is not already available, install Miniconda in your home directory following the Linux instructions above, then create the `rnaseq` environment as described.
