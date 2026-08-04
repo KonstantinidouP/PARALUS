@@ -68,12 +68,6 @@ conda activate rnaseq
 
 > **Apple Silicon Mac (M1/M2/M3/M4):** The conda build of STAR does not work on ARM64 due to a process spawning bug. STAR must be compiled from source. See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 
-> **Optional — PDF plots:** PARALUS can generate k-mer enrichment and metagene plots as PDF files if `matplotlib` and `numpy` are available. Install them in the same `rnaseq` conda environment:
-> ```bash
-> conda activate rnaseq
-> conda install -c conda-forge matplotlib numpy
-> ```
-
 For detailed installation instructions across different environments (Apple Silicon Mac, Linux, shared servers, HPC clusters), see [INSTALLATION.md](INSTALLATION.md).
 
 ---
@@ -89,11 +83,13 @@ git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
 ```
 
-Before running PARALUS, make sure to activate the conda environment that contains the dependencies:
+Before running PARALUS, make sure all dependencies are available in your environment. If using conda:
 
 ```bash
 conda activate rnaseq
 ```
+
+On HPC clusters (e.g. Biowulf), load each dependency using your cluster's module system instead (see [INSTALLATION.md](INSTALLATION.md)).
 
 ### Step 2 — Build the annotation file (run once per genome)
 
