@@ -283,6 +283,20 @@ bash paralus_1.7.1.sh \
 
 ---
 
+## Example Output
+
+The following example shows PARALUS output from a PAR-CLIP experiment with CPSF1 (Cleavage and Polyadenylation Specificity Factor 1), a component of the cleavage and polyadenylation complex known to recognize the canonical AAUAAA polyadenylation signal sequence on precursor messenger RNA (pre-mRNA). The predominant binding at 3'UTRs is consistent with its known function, and the enrichment of AATAAA (the DNA equivalent of AAUAAA) is clearly visible in the 5-mer scatter plot.
+
+**5-mer enrichment scatter plot** — each of the 1024 pentamers is plotted by its count in bound sequences (y-axis) vs. background sequences (x-axis). Pentamers enriched at binding sites fall above the diagonal; depleted ones fall below. The AATAAA signal is among the top enriched pentamers.
+
+![5-mer enrichment](images/FH-CPSF1_fPARCLIP_0.5Uul_RNaseI_5mer_enrichment.png)
+
+**Metagene plot** — distribution of T-to-C crosslink sites across the 5'UTR, CDS, and 3'UTR of protein-coding genes, normalized by region length. A distinct spike at the 3' end of the 3'UTR reflects CPSF1's binding at the cleavage and polyadenylation site.
+
+![Metagene UTR/CDS](images/FH-CPSF1_fPARCLIP_0.5Uul_RNaseI_ttoc_utr_cds.png)
+
+---
+
 ## Repository structure
 
 ```
