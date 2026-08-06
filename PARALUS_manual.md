@@ -23,7 +23,7 @@ not for a first-time walkthrough.
 
 PARALUS is a single Bash file that performs every step of PAR-CLIP/CLIP
 analysis: adapter/UMI trimming, optional rRNA depletion, genome alignment
-(STAR), T-to-C (or G-to-A) crosslink-site extraction, a two-stage
+(STAR), T-to-C crosslink-site extraction, a two-stage
 group-to-cluster calling algorithm, genomic annotation of binding clusters,
 5-mer sequence enrichment, and metagene analysis of crosslink site distribution across transcript regions -
 all from one command, with no dependencies beyond cutadapt, STAR,
@@ -124,50 +124,16 @@ When `-G` is used, the following Trierarch settings (described in Section 2.1) c
 
 ## 4\. Pipeline walkthrough
 
-1. **Preprocessing.** Reads are collapsed by unique sequence (with counts
-preserved in the fasta headers), optionally rRNA-pre-mapped (`-e`),
-then adapter/UMI-trimmed with cutadapt.
-2. **Alignment.** STAR aligns in ungapped, end-to-end mode
-(`--alignIntronMax 1`) - splicing is not modelled at the alignment
-stage; intron/exon context is instead recovered later from the
-annotation.
-3. **Crosslink-site extraction.** `samtools calmd` regenerates the MD tag,
-then a strand-aware awk pass identifies T-to-C (forward strand,
-SAM flag 0/256) or G-to-A (reverse strand, SAM flag 16/272)
-mismatches consistent with 4SU/6SG-induced conversions, handling
-both single- and double-conversion reads.
-4. **Group calling.** Overlapping reads are merged into groups; each
-group's read-start/end spread is compared against a
-standard-deviation-based normality threshold (68%, i.e. roughly
-1 SD either side, the expected coverage for a normal distribution).
-Groups that fail this test (satellite/repetitive loci, broad or
-multi-modal read stacks) are set aside as "NonNormal" rather than
-silently kept or dropped.
-5. **NonNormal subsampling.** NonNormal groups are re-evaluated on a
-subsample of their reads, drawn via a deterministic hash of each read
-name (not `rand()`, which was found to be non-reproducible in this
-environment across repeated runs) - verified reproducible and
-well-distributed even when read names are sequential.
-6. **Cluster promotion.** Groups (from both the normal and re-evaluated
-NonNormal passes) become clusters once they clear the `-c`/`-r`
-thresholds.
-7. **Annotation.** Clusters are intersected against the annotation bed.
-Each candidate hit's gene/feature/biotype is packed into one unit
-before merging, so a cluster's reported annotation always describes
-one real, internally-consistent feature - ranked by the same fixed
-biotype/feature priority Trierarch itself uses, with overlap length
-as a tiebreaker within a tied priority.
-8. **5-mer enrichment.** Both an upstream and downstream real flanking
-region are taken per cluster (each independently dropped if it would
-cross a chromosome boundary or land on another real cluster); 5-mer
-counts from both sides are averaged and compared against bound-site
-counts, ranked by enrichment ratio with a pseudocount.
-9. **Metagene analysis.** Crosslink locations are mapped onto a
-transcript-ordered concatenation of each gene's 5'UTR/CDS/3'UTR
-segments (from the canonical annotation), and independently onto each
-intron's own splice-site-to-splice-site span, weighted by real
-per-location read depth, normalized per gene/intron before averaging
-so no single locus dominates.
+1. **Preprocessing.** Reads are collapsed by unique sequence (with read counts preserved in the FASTA headers for downstream depth weighting), rRNA-depleted (`-e`, optional),
+and adapter/UMI-trimmed with cutadapt.
+2. **Alignment.** STAR is used to align reads end-to-end without allowing spliced alignments (`--alignIntronMax 1`, `--alignEndsType EndToEnd`) against the reference genome. Intron/exon context is recovered later from the annotation.
+3. **Crosslink-site extraction.** T-to-C mismatches — the hallmark of PAR-CLIP, arising when 4SU-incorporated sites are UV-crosslinked and result in T-to-C substitutions during cDNA synthesis — are identified and extracted at single-nucleotide resolution.
+4. **Group calling.** Overlapping reads are merged into groups. Each group's read distribution is tested for normality. Groups with an irregular read distribution (e.g. broad or multi-modal) are set aside as "NonNormal" and handled separately in the next step.
+5. **NonNormal group re-evaluation.** NonNormal groups (with broad or irregular read distributions) are re-evaluated on a representative subsample of their reads. This helps in high-coverage regions where elevated background can obscure a genuine binding signal: subsampling reduces the noise and allows the underlying signal to emerge. Groups with sparse, scattered reads are typically discarded at this stage. The subsampling is deterministic, ensuring reproducible results across runs.
+6. **Cluster promotion.** Groups that clear the `-c`/`-r` thresholds are promoted to clusters.
+7. **Annotation.** Clusters are intersected with the annotation BED file. Each cluster is assigned a single gene name, feature, and biotype. For details on how overlapping annotations are resolved, see Section 2.2 (Trierarch).
+8. **5-mer enrichment.** Counts all 1024 pentamers (5-mers) within the bound cluster sequences and compares them against the counts of 5-mers within the flanking genomic sequences upstream and downstream of each cluster (used as background). Raw counts are saved to `*_5mers.txt` and enrichment ratios to `*_5mer_ratios.tsv`.
+9. **Metagene analysis.** Distribution of crosslinked reads is visualized across two metagene profiles: the full mature mRNA of protein-coding genes (5'UTR → CDS → 3'UTR as a continuous unit) and independently across introns. Each mRNA and intron is normalized by its total crosslinked reads count before averaging, so highly-bound loci do not dominate the profile.
 
 ---
 
@@ -179,7 +145,7 @@ is an intermediate PARALUS creates and deletes automatically.
 |File|Contents|
 |-|-|
 |`<name>.Aligned.sortedByCoord.out.bam` (+`.bai`)|Full genome alignment.|
-|`<name>.aligned_TtoC.bam` (+`.bai`)|Reads carrying a real T-to-C/G-to-A conversion.|
+|`<name>.aligned_TtoC.bam` (+`.bai`)|Reads carrying a T-to-C conversion.|
 |`<name>.aligned_TtoC.bed`|Per-read bed of conversion-supporting reads (kept specifically so depth-weighted downstream analyses, e.g. the metagene tools, can be built from it later).|
 |`<name>.groups.csv`|Every candidate group, before cluster-threshold filtering - useful for CLIP data with no conversion signal to filter on (Section 6.3).|
 |`<name>.clusters.csv`|Final annotated binding sites: gene, feature, biotype, sequence, read/conversion support, per row.|
@@ -230,7 +196,7 @@ UTR/CDS boundaries, so "this gene's 5'UTR" isn't a single well-defined
 thing, and fewer genes will have all three regions (5'UTR, CDS, 3'UTR)
 cleanly resolvable.
 
-### 6.3 Plain CLIP (no 4SU/6SG labelling)
+### 6.3 Plain CLIP (no 4SU labelling)
 
 `clusters.csv` requires T-to-C support to promote a group into a cluster
 
