@@ -147,22 +147,22 @@ PARALUS produces the following output files. Temporary intermediate files create
 |-|-|
 |`<name>.Aligned.sortedByCoord.out.bam` (+`.bai`)|Full genome alignment.|
 |`<name>.aligned_TtoC.bam` (+`.bai`)|Reads carrying a T-to-C conversion.|
-|`<name>.aligned_TtoC.bed`|Per-read bed of conversion-supporting reads (kept specifically so depth-weighted downstream analyses, e.g. the metagene tools, can be built from it later).|
-|`<name>.groups.csv`|Every candidate group, before cluster-threshold filtering - useful for CLIP data with no conversion signal to filter on (Section 6.3).|
-|`<name>.clusters.csv`|Final annotated binding sites: gene, feature, biotype, sequence, read/conversion support, per row.|
+|`<name>.aligned_TtoC.bed`|T-to-C crosslink-supporting reads in BED format.|
+|`<name>.groups.csv`|Every candidate group, before cluster-threshold filtering. For CLIP data with no T-to-C conversion signal, final annotated binding sites are represented by groups rather than clusters (Section 6.3).|
+|`<name>.clusters.csv`|Final annotated PAR-CLIP binding sites: gene, feature, biotype, sequence, read counts, and T-to-C conversion metrics, per row.|
 |`<name>.clusters.bed`|Bed version of the same clusters.|
 |`<name>_run_<timestamp>.log`|Full stdout/stderr of the run, plus the exact invoked command.|
-|`<name>_stats.txt`|Run parameters, per-stage timing, and summary statistics (reads per biotype/feature, cluster counts, etc).|
-|`<name>_5mers.txt`|Raw background vs bound 5-mer counts.|
-|`<name>_5mer_ratios.tsv`|Same data, ranked by enrichment ratio.|
-|`<name>_5mer_enrichment.pdf`|Scatter plot of 5-mer enrichment (top/bottom enriched pentamers labelled). Only generated if python3 with numpy and matplotlib are installed.|
+|`<name>_stats.txt`|Run parameters, total runtime, and summary counts (reads per biotype/feature, cluster counts, etc).|
+|`<name>_5mers.txt`|Raw bound and background 5-mer counts.|
+|`<name>_5mer_ratios.tsv`|Bound vs. background enrichment ratio per 5-mer, ranked from most to least enriched.|
+|`<name>_5mer_enrichment.pdf`|Scatter plot illustrating 5-mer enrichment. Only generated if python3 with numpy and matplotlib are installed.|
 |`<name>_ttoc_utr_cds.pdf`|Metagene plot of crosslinked read distribution across 5'UTR → CDS → 3'UTR. Only generated if python3 with numpy and matplotlib are installed.|
 |`<name>_ttoc_intron.pdf`|Metagene plot of crosslinked read distribution across introns (5' splice site → 3' splice site). Only generated if python3 with numpy and matplotlib are installed.|
-|`rRNA_aligned_<name>Aligned.sortedByCoord.out.bam`|Only if `-e` was used: reads that mapped to the rRNA reference - kept deliberately, since binding on rRNA itself can be real biological signal, not just background to discard.|
+|`rRNA_aligned_<name>Aligned.sortedByCoord.out.bam`|Only if `-e` was used: reads that mapped to the rRNA reference. Retained for cases where rRNA binding is of biological interest.|
 
 ---
 
-## 6\. Advanced recipes
+## 6\. Advanced options
 
 ### 6.1 rRNA pre-mapping
 
