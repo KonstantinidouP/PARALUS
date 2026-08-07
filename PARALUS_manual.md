@@ -32,7 +32,7 @@ numpy/matplotlib.
 
 Trierarch, its companion annotation builder, is merged into the same
 file as a Bash function. It converts any GTF into the 7-column BED
-PARALUS needs, resolving overlapping small-RNA/protein-coding annotations by an explicit priority order.
+PARALUS needs, resolving overlapping annotations by an explicit priority order.
 
 Both tools are invoked from the same script:
 
@@ -53,17 +53,19 @@ Both tools are invoked from the same script:
 |`-T tRNA_DB.bed`|no|tRNA coordinates, bed6 (chr, start, end, name, score, strand) - e.g. from GtRNAdb.|
 |`-M miRNA_DB`|no|miRNA coordinates - either a miRBase GFF3 (auto-detected by column count) or a plain bed6 in the same shape as `-T`.|
 |`-O output_prefix`|no|Output file prefix. Default: the GTF filename with `.gtf` stripped. If a full path is provided, output files are written to that location; otherwise they are written to the same directory as the GTF.|
-|`-C`|no|Restrict extraction to `Ensembl_canonical`/`MANE_Select`-tagged transcripts only. Not set by default, but strongly recommended when you plan to generate metagene plots (Section 6.2), since without it a gene's 5'UTR/CDS/3'UTR boundaries are ambiguous (they depend on which isoform).|
+|`-C`|no|Restrict to canonical transcripts (Ensembl_canonical or MANE_Select tagged) for protein-coding genes. For non-coding genes, where canonical transcript designation is less consistently defined, all transcripts are included regardless of canonical tagging. Overlapping features from multiple transcripts of the same non-coding gene are resolved by the priority described in Section 2.2. This flag is recommended for cleaner UTR/CDS boundaries in protein-coding genes.|
 |`-U`|no|Keep genes with no `gene_name` attribute, falling back to `gene_id` (e.g. an ENSG... accession) as the display name. Not set by default — genes with no `gene_name` are dropped, since an accession-only name usually indicates a novel/unannotated locus.|
 
-### 2.2 What it builds, and in what order
+### 2.2 Annotation construction and overlap resolution
 
-Trierarch resolves overlapping annotations using a fixed priority cascade,
-highest first: `snoRNA > snRNA > rRNA > miRNA > tRNA > Mt_tRNA > scaRNA > lncRNA > protein_coding > everything else`. Where annotations overlap, only the highest-priority one is retained at each genomic position during the final BED assembly, so the output contains no conflicting annotations.
+Trierarch uses a two-level resolution strategy to ensure the final annotation BED contains no conflicting annotations.
 
-Within `protein_coding`, 5'UTR/3'UTR are derived from the union of a gene's exonic bases minus the union of its CDS bases. Genic regions that cannot be unambiguously assigned to a specific feature due to disagreement between isoforms are labelled `exon` as a conservative fallback — this only applies when `-C` is not used.
+Trierarch resolves overlapping gene type annotations using a fixed priority cascade,
+highest first: `snoRNA > snRNA > rRNA > miRNA > tRNA > Mt_tRNA > scaRNA > lncRNA > protein_coding > everything else`. Where different gene types overlap, only the highest-priority one is retained at each genomic position during the final BED assembly.
 
-> **Note:** Trierarch requires a GTF file as input. If a GFF3 file is provided instead, the script will stop with a clear error message and suggest a conversion command using `gffread` or AGAT before re-running.
+Where multiple transcripts of the same gene are included, these are first collapsed into a unified, non-overlapping set of coordinates. Feature type conflicts across transcripts are resolved by priority: CDS takes precedence over UTR, and all exonic features take precedence over introns. For protein-coding genes, the `-C` flag can direct Trierarch to build annotation using the canonical transcript only.
+
+> **Note:** Trierarch requires a GTF file as input. If a GFF3 file is provided instead, the script will stop with a clear error message and suggest a conversion command before re-running.
 
 ### 2.3 Downloading external databases (optional)
 
@@ -97,8 +99,8 @@ Both are eukaryote-specific resources — for organisms outside either resource'
 |`-n`|`19`|Minimum read length after trimming.|
 |`-m`|`3`|Minimum reads to define a group.|
 |`-a`|none|3' adapter sequence for cutadapt.|
-|`-d`|`GTTCAGAGTTCTACAGTCCGACGATC`|5' adapter sequence.|
-|`-u`|`0`|Bases trimmed from the 5' end after adapter removal (UMI length). Omit if the 5' adapter itself is barcoded.|
+|`-d`|`GTTCAGAGTTCTACAGTCCGACGATC`|5' adapter sequence. If the 5' adapter contains a barcode, include the full barcoded sequence here.|
+|`-u`|`0`|Bases trimmed from the 5' end after adapter removal (UMI length).|
 |`-p`|`8`|Number of threads. Do not exceed 12 - STAR itself recommends against more.|
 |`-e`|none|Full path to a STAR index for an rRNA reference genome. When provided, reads are first mapped against this reference, the percentage of rRNA reads is reported in the stats file, and those reads are removed before genome alignment.|
 
@@ -117,8 +119,8 @@ When `-G` is used, the following Trierarch settings (described in Section 2.1) c
 |-|-|
 | `-T` | tRNA BED file from GtRNAdb (optional) |
 | `-M` | miRNA GFF3 or BED file (optional) |
-| `-C` | Use canonical transcripts only (recommended) |
-| `-U` | Keep genes with no `gene_name` attribute |
+| `-C` | Use canonical transcript only for protein-coding genes (recommended). See Section 2.1 for full details. |
+| `-U` | Keep genes with no `gene_name` attribute, using their Ensembl accession ID as the gene name instead. Without this flag, these genes are excluded from the annotation BED and any clusters overlapping them will appear as unannotated. |
 
 ---
 
@@ -139,8 +141,7 @@ and adapter/UMI-trimmed with cutadapt.
 
 ## 5\. Output files
 
-Only files that survive to the end of a run are listed - everything else
-is an intermediate PARALUS creates and deletes automatically.
+PARALUS produces the following output files. Temporary intermediate files created during the run are removed upon completion.
 
 |File|Contents|
 |-|-|
@@ -154,9 +155,9 @@ is an intermediate PARALUS creates and deletes automatically.
 |`<name>_stats.txt`|Run parameters, per-stage timing, and summary statistics (reads per biotype/feature, cluster counts, etc).|
 |`<name>_5mers.txt`|Raw background vs bound 5-mer counts.|
 |`<name>_5mer_ratios.tsv`|Same data, ranked by enrichment ratio.|
-|`<name>_5mer_enrichment.pdf`|Labelled scatter of the above (top/bottom enriched motifs).|
-|`<name>_ttoc_utr_cds.pdf`|5'UTR→CDS→3'UTR metagene, depth-weighted.|
-|`<name>_ttoc_intron.pdf`|Intron metagene (5' splice site → 3' splice site), depth-weighted.|
+|`<name>_5mer_enrichment.pdf`|Scatter plot of 5-mer enrichment (top/bottom enriched pentamers labelled). Only generated if python3 with numpy and matplotlib are installed.|
+|`<name>_ttoc_utr_cds.pdf`|Metagene plot of crosslinked read distribution across 5'UTR → CDS → 3'UTR. Only generated if python3 with numpy and matplotlib are installed.|
+|`<name>_ttoc_intron.pdf`|Metagene plot of crosslinked read distribution across introns (5' splice site → 3' splice site). Only generated if python3 with numpy and matplotlib are installed.|
 |`rRNA_aligned_<name>Aligned.sortedByCoord.out.bam`|Only if `-e` was used: reads that mapped to the rRNA reference - kept deliberately, since binding on rRNA itself can be real biological signal, not just background to discard.|
 
 ---
