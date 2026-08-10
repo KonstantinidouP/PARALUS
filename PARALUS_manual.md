@@ -193,6 +193,8 @@ STAR --runMode genomeGenerate \\
 with bioconda's compiled STAR build on some systems. Install the
 official precompiled binary from the STAR GitHub release page directly (for Linux systems) or compile from source (for Mac). For detailed instructions on appropriate STAR installation in the different environments see our extended installation guide (INSTALLATION.md).
 
+**Error messages**
+
 * **"illegal option" errors** - flags are case-sensitive: `-G`/`-g` and
 `-C`/`-c` are different flags with different meanings.
 * **"STAR genome index not found"** - `-x` must point at the index
@@ -206,6 +208,7 @@ even when a STAR index already exists, since later steps
 environment isn't active in this terminal session; run
 `conda activate rnaseq` again (it doesn't persist across terminal
 windows/tabs).
+
 * **"-c is set to 0 but -r is not. For CLIP mode (no T-to-C signal expected), both -c and -r must be set to 0. For PAR-CLIP mode, use the default values or set both above 0."** - `-c` and `-r` must either both be set to `0` (CLIP mode) or both be above `0` (PAR-CLIP mode). Setting only one of them to `0` is not allowed.
 * **"-r is set to 0 but -c is not. For CLIP mode (no T-to-C signal expected), both -c and -r must be set to 0. For PAR-CLIP mode, use the default values or set both above 0."** - same as above, triggered when `-r` is `0` but `-c` is not.
 
