@@ -14,7 +14,7 @@ not for a first-time walkthrough.
 3. [PARALUS](#3-paralus)
 4. [Pipeline walkthrough](#4-pipeline-walkthrough)
 5. [Output files](#5-output-files)
-6. [Advanced recipes](#6-advanced-recipes)
+6. [Advanced options](#6-advanced-options)
 7. [Troubleshooting](#7-troubleshooting)
 
 ---
@@ -98,7 +98,6 @@ For organisms outside either resource's coverage, Trierarch runs fine without th
 |Flag|Default|Description|
 |-|-|-|
 |`-n`|`19`|Minimum read length after trimming.|
-|`-m`|`3`|Minimum reads to define a group.|
 |`-a`|none|3' adapter sequence for cutadapt.|
 |`-d`|`GTTCAGAGTTCTACAGTCCGACGATC`|5' adapter sequence. If the 5' adapter contains a barcode, include the full barcoded sequence here.|
 |`-u`|`0`|Bases trimmed from the 5' end after adapter removal (UMI length).|
@@ -109,6 +108,7 @@ For organisms outside either resource's coverage, Trierarch runs fine without th
 
 |Flag|Default|Description|
 |-|-|-|
+|`-m`|`3`|Minimum reads to define a group.|
 |`-c`|`1`|Minimum number of distinct T-to-C conversion positions required for a group to be called a cluster. Set both `-c` and `-r` to `0` for CLIP data with no T-to-C signal.|
 |`-r`|`0.3`|Minimum fraction of reads within a group that must carry a T-to-C conversion for it to be called a cluster. Set both `-r` and `-c` to `0` for CLIP data with no T-to-C signal.|
 
