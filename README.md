@@ -252,7 +252,7 @@ The following flags are only relevant when `-G` is set:
 | `*.aligned_TtoC.bam` (+`.bai`) | Subset of aligned reads carrying a T-to-C conversion. Empty in CLIP mode. |
 | `*.aligned_TtoC.bed` | T-to-C crosslink-supporting reads in BED format. Empty in CLIP mode. |
 | `*.groups.csv` | Every candidate group, before cluster-threshold filtering (`-c`/`-r`). |
-| `*.clusters.csv` | Final annotated PAR-CLIP / CLIP binding sites: gene, feature, biotype, sequence, read counts, and T-to-C conversion metrics, per row. |
+| `*.clusters.csv` | Final annotated PAR-CLIP / CLIP binding sites: genomic coordinates, annotated gene name, feature type (e.g. 3'UTR, CDS, intron), biotype (e.g. protein_coding, lncRNA), binding sequence, read counts, and T-to-C conversion metrics, per row. |
 | `*.clusters.bed` | BED version of the clusters file. |
 | `*_run_<timestamp>.log` | Full stdout/stderr of the run, plus the exact invoked command. |
 | `*_stats.txt` | Run parameters, total runtime, and summary counts (reads per biotype/feature, cluster counts, etc). |
