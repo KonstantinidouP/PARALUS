@@ -1,6 +1,6 @@
-# PARALUS — Dependencies Installation Guide
+# PARALUS - Dependencies Installation Guide
 
-This document provides detailed installation instructions for different environments. For a quick start, see the main [README.md](README.md).
+This document provides detailed instructions for the installation of dependencies on Linux local machines and Apple Silicon Macs. If you are working on an HPC cluster (e.g. Biowulf), the required tools are likely already installed centrally and only need to be loaded before running PARALUS - refer to your cluster's documentation for instructions (e.g. `module load STAR`). For a quick start, see the main [README.md](README.md).
 
 ---
 
@@ -24,7 +24,7 @@ Verify:
 STAR --version
 ```
 
-### Apple Silicon Mac (M1/M2/M3/M4) — compile from source
+### Apple Silicon Mac (M1/M2/M3/M4) - compile from source
 
 
 
@@ -48,7 +48,7 @@ cd source
 make STARforMacStatic CXX=/opt/homebrew/bin/g++-15 CXXFLAGS_SIMD=
 ```
 
-Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` suppresses the `-mavx2` flag, which is x86-only and does not exist on ARM64 — this does not affect performance. Compilation takes a few minutes; warnings are harmless.
+Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` suppresses the `-mavx2` flag, which is x86-only and does not exist on ARM64 - this does not affect performance. Compilation takes a few minutes; warnings are harmless.
 
 3. Install and verify:
 
@@ -92,7 +92,7 @@ conda create -n rnaseq -c bioconda -c conda-forge \
     samtools bedtools cutadapt python matplotlib numpy
 ```
 
-> **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`.
+> **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`. Including both `-c bioconda` and `-c conda-forge` is important - some packages may fail to resolve dependencies with bioconda alone on Apple Silicon.
 
 ### Activate the conda environment before running PARALUS
 
@@ -102,9 +102,9 @@ conda activate rnaseq
 
 ---
 
-## HPC clusters (e.g. Biowulf/NIH) — module load
+## HPC clusters (e.g. Biowulf/NIH) - module load
 
-On clusters that use the `module` system, load each dependency before running PARALUS. The exact module names may vary by cluster — check available versions with `module avail star`:
+On clusters where the required tools are already centrally installed, load them before running PARALUS. The exact module names vary by cluster - the following is an example for Biowulf/NIH:
 
 ```bash
 module load star/2.7.11b
@@ -120,7 +120,7 @@ Run these lines before running PARALUS or add them to the top of your submission
 
 ## Installing PARALUS
 
-Clone the repository to any location on your machine — PARALUS is a bash script and does not need to be installed in the conda environment:
+Clone the repository to any location on your machine - PARALUS is a bash script and does not need to be installed in the conda environment:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
