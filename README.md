@@ -166,6 +166,8 @@ STAR --runMode genomeGenerate \
 
 ### Step 4 - Run PARALUS
 
+Make sure all dependencies are loaded or activated before running. See [INSTALLATION.md](INSTALLATION.md) for instructions tailored to your system.
+
 **Option A - using a pre-built annotation BED file:**
 
 ```bash
