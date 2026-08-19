@@ -110,10 +110,16 @@ This produces `gencode.v49.annotation_Trierarch_canonical_Paralus.bed` to use wi
 
 You need the reference genome of your organism of interest in FASTA format. If you don't have it yet, download it from UCSC. These are large files (~1 GB compressed) - make sure you have enough disk space.
 
-For human (hg38):
+For human (hg38) — Linux:
 
 ```bash
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
+```
+
+Mac (curl is pre-installed):
+
+```bash
+curl -o hg38.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
 ```
 
 Decompress the FASTA - STAR requires an uncompressed file for genome index generation:
@@ -143,11 +149,20 @@ Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed
 
 This step is only needed if you want to use the rRNA depletion option in PARALUS (the `-e` flag). It removes rRNA-mapping reads before genome alignment, which can significantly improve the signal-to-noise ratio in your data.
 
-Download the human rRNA sequences and build a STAR index (`wget` is available on Linux by default; on Mac install it via `brew install wget`):
+Download the human rRNA sequences and build a STAR index. On Linux, `wget` is available by default. On Mac, use `curl` (pre-installed) or install `wget` via `brew install wget`:
+
+Linux:
 
 ```bash
 wget -O U13369.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/U13369.1?download=true"
 wget -O X12811.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/X12811.1?download=true"
+```
+
+Mac:
+
+```bash
+curl -o U13369.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/U13369.1?download=true"
+curl -o X12811.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/X12811.1?download=true"
 ```
 
 Alternatively, both sequences can be downloaded manually from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide) - search for accessions `U13369.1` (45S rDNA repeat unit) and `X12811.1` (5S rRNA), download each as FASTA, then run:
