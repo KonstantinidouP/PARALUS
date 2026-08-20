@@ -33,7 +33,7 @@ PARALUS includes **Trierarch**, a built-in annotation builder that generates the
 
 ## Performance & Accessibility
 
-PARALUS is designed to be fast, self-contained, and accessible - running on both Linux servers and local Mac machines with a single command.
+PARALUS is designed to be fast, self-contained, and accessible - running on any Linux or Mac machine with a single command. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine. Users with less RAM should consider running on a server.
 
 PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads:
 
@@ -45,7 +45,7 @@ PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an App
 
 Runtime scales with input size and library complexity, ranging from ~2.5 minutes for a 238 MB dataset to ~14.4 minutes for a 1.4 GB dataset. CPU utilization consistently exceeded 100%, reflecting effective use of multi-core processing. All analyses completed on a local Mac laptop without requiring access to an HPC cluster.
 
-> **Note:** Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is recommended for human or mouse genome analysis on a local machine. Users with less RAM should consider running on a server. Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk speed and available RAM can be as important as CPU core count. For large datasets or batch processing of multiple samples, running on a Linux server is recommended.
+> **Note:** Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk speed and available RAM can be as important as CPU core count. For large datasets or batch processing of multiple samples, running on a Linux server is recommended.
 
 ---
 
