@@ -35,14 +35,17 @@ PARALUS includes **Trierarch**, a built-in annotation builder that generates the
 
 PARALUS is designed to be fast, self-contained, and accessible - running on both Linux servers and local Mac machines with a single command.
 
-On an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads, PARALUS was benchmarked on two datasets of different sizes:
+PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads:
 
-| Dataset size | Approx. reads | Runtime | CPU utilization |
-|---|---|---|---|
-| 512 MB FASTQ.gz | ~8.8 million | ~7 minutes | 171% |
-| 4.7 GB FASTQ.gz | ~10x larger | ~100 minutes | 111% |
+| Dataset | Input FASTQ.gz size | Raw reads | Unique reads (after collapsing) | Runtime (minutes) | CPU |
+|---|---|---|---|---|---|
+| CPSF1 (SRR13313335) | 238 MB | 9,135,633 | 2,142,567 | 2:32.39 (~2.5 min) | 112% |
+| KHSRP (SRR13313340) | 559 MB | 19,992,492 | 8,878,651 | 7:06.72 (~7.1 min) | 173% |
+| U2AF1 (SRR8606876) | 1.4 GB | 54,284,359 | 10,680,775 | 14:21.47 (~14.4 min) | 147% |
 
-Runtime is consistent and reproducible across runs. Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk I/O speed and available RAM can be as important as CPU core count - a fast SSD and sufficient RAM to cache large files like the genome FASTA in memory will improve performance significantly. For large datasets or batch processing of multiple samples, running on a Linux server is recommended.
+Runtime scales with input size and library complexity, ranging from ~2.5 minutes for a 238 MB dataset to ~14.4 minutes for a 1.4 GB dataset. CPU utilization consistently exceeded 100%, reflecting effective use of multi-core processing. All analyses completed on a local Mac laptop without requiring access to an HPC cluster.
+
+> **Note:** Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is recommended for human or mouse genome analysis on a local machine. Users with less RAM should consider running on a server. Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk speed and available RAM can be as important as CPU core count. For large datasets or batch processing of multiple samples, running on a Linux server is recommended.
 
 ---
 
