@@ -1,7 +1,7 @@
 # PARALUS Extended Manual
 
 This is the full manual for PARALUS and its companion annotation
-builder, Trierarch (`paralus_1.7.3.sh`). For a guided first run, see
+builder, Trierarch (`paralus_1.7.9.sh`). For a guided first run, see
 `README.md` instead - this document is for looking things up,
 not for a first-time walkthrough.
 
@@ -23,10 +23,11 @@ not for a first-time walkthrough.
 
 PARALUS is a single Bash file that performs every step of PAR-CLIP/CLIP
 analysis: adapter/UMI trimming, optional rRNA depletion, genome alignment
-(STAR), T-to-C crosslink-site extraction (for PAR-CLIP data), a two-stage
+(STAR by default, or HISAT2 with `-H` - see Section 3.1 and 6.2), T-to-C crosslink-site extraction (for PAR-CLIP data), a two-stage
 group-to-cluster calling algorithm, genomic annotation of binding clusters,
 5-mer sequence enrichment, and metagene analysis of crosslink site distribution across transcript regions -
-all from a single command, with no dependencies beyond cutadapt, STAR,
+all from a single command, with no dependencies beyond cutadapt, an aligner
+(STAR, or HISAT2 for `-H`),
 samtools, bedtools, and (for the two plotting steps) python3 with
 numpy/matplotlib.
 
@@ -37,8 +38,8 @@ PARALUS needs, resolving overlapping annotations by an explicit priority order.
 Both tools are invoked from the same script:
 
 ```bash
-./paralus_1.7.3.sh --trierarch -G genes.gtf -C -O prefix   # Trierarch standalone run to pre-build the annotation BED
-./paralus_1.7.3.sh -i ... -x ... -A ... [options]         # a standard PARALUS run for PAR-CLIP / CLIP analysis
+./paralus_1.7.9.sh --trierarch -G genes.gtf -C -O prefix   # Trierarch standalone run to pre-build the annotation BED
+./paralus_1.7.9.sh -i ... -x ... -A ... [options]         # a standard PARALUS run for PAR-CLIP / CLIP analysis
 ```
 
 ---
@@ -89,9 +90,9 @@ For organisms outside either resource's coverage, Trierarch runs fine without th
 |Flag|Description|
 |-|-|
 |`-i input_file`|Raw reads file: `.fastq.gz`, `.fastq`, or `.fasta`.|
-|`-x genome_index`|Full path to the STAR genome index directory.|
+|`-x genome_index`|Full path to the genome index: a STAR genomeDir by default, or a HISAT2 index basename (built with `hisat2-build`) if `-H` is set.|
 |`-A annotation.bed` **or** `-G genes.gtf`|Either a pre-built Trierarch BED file (`-A`), or a raw GTF (`-G`) which triggers Trierarch to build the required BED file before the run starts.|
-|`-f genome.fa`|Full path to the genome FASTA file. Required even if a STAR index already exists, as it is needed for T-to-C crosslink site extraction (`samtools calmd`) and for retrieving the binding site sequences in the output (`bedtools getfasta`).|
+|`-f genome.fa`|Full path to the genome FASTA file. Required even if a genome index already exists, as it is needed for T-to-C crosslink site extraction (`samtools calmd`) and for retrieving the binding site sequences in the output (`bedtools getfasta`).|
 
 ### 3.2 Preprocessing settings
 
@@ -102,7 +103,8 @@ For organisms outside either resource's coverage, Trierarch runs fine without th
 |`-d`|`GTTCAGAGTTCTACAGTCCGACGATC`|5' adapter sequence. If the 5' adapter contains a barcode, include the full barcoded sequence here.|
 |`-u`|`0`|Bases trimmed from the 5' end after adapter removal (UMI length).|
 |`-p`|`8`|Number of threads. Do not exceed 12 - STAR itself recommends against more.|
-|`-e`|none|Full path to a STAR index for an rRNA reference genome. When provided, reads are first mapped against this reference, the percentage of rRNA reads is reported in the stats file, and those reads are removed before genome alignment.|
+|`-e`|none|Full path to an rRNA reference genome index (STAR genomeDir, or HISAT2 basename if `-H` is set). When provided, reads are first mapped against this reference and those reads are removed before genome alignment.|
+|`-H`|off (STAR)|Use HISAT2 instead of STAR for every alignment step. STAR needs its whole genome index in RAM to build and to align against (~30 GB for human/mouse), which most 16 GB Mac laptops can't do; HISAT2 uses an FM-index instead (~4-5 GB for human/mouse). When set, `-x`/`-e` must be HISAT2 index basenames, not STAR genomeDir paths - see Section 6.2. Everything else about the run is unaffected: same inputs, same outputs, just a lighter aligner underneath.|
 
 ### 3.3 Binding-site calling settings
 
@@ -129,7 +131,7 @@ When `-G` is used, the following Trierarch settings (described in Section 2.1) c
 
 1. **Preprocessing.** Reads are collapsed by unique sequence (with read counts preserved in the FASTA headers for downstream depth weighting), rRNA-depleted (`-e`, optional),
 and adapter/UMI-trimmed with cutadapt.
-2. **Alignment.** STAR is used to align reads end-to-end without allowing spliced alignments (`--alignIntronMax 1`, `--alignEndsType EndToEnd`) against the reference genome. Intron/exon context is recovered later from the annotation.
+2. **Alignment.** STAR (or HISAT2 with `-H`) is used to align reads end-to-end without allowing spliced alignments (`--alignIntronMax 1`/`--alignEndsType EndToEnd` for STAR, `--no-spliced-alignment`/`--no-softclip` for HISAT2) against the reference genome. Intron/exon context is recovered later from the annotation.
 3. **Crosslink-site extraction.** T-to-C mismatches — the hallmark of PAR-CLIP, arising when 4SU-incorporated sites are UV-crosslinked and result in T-to-C substitutions during cDNA synthesis — are identified and extracted at single-nucleotide resolution. This step is skipped in CLIP mode (`-c 0 -r 0`).
 4. **Group calling.** Overlapping reads are merged into groups. Each group's read distribution is tested for normality. Groups with an irregular read distribution (e.g. broad or multi-modal) are set aside as "NonNormal" and handled separately in the next step.
 5. **NonNormal group re-evaluation.** NonNormal groups (with broad or irregular read distributions) are re-evaluated on a representative subsample of their reads. This helps in high-coverage regions where elevated background can obscure a genuine binding signal: subsampling reduces the noise and allows the underlying signal to emerge. Groups with sparse, scattered reads are typically discarded at this stage. The subsampling is deterministic, ensuring reproducible results across runs.
@@ -184,6 +186,30 @@ STAR --runMode genomeGenerate \\
 
 `--genomeSAindexNbases 6` is required because the rRNA genome is very small (~43-45 kb) - refer to the STAR manual for details. For mouse, use accession `BK000964.3` and the same command.
 
+### 6.2 HISAT2 mode (`-H`, for machines with limited RAM)
+
+STAR needs its whole genome index in RAM, both to build it and to align against it (~30 GB for human/mouse). On a Mac laptop with 16 GB of RAM or less, that usually isn't practical. HISAT2 is offered as a drop-in second aligner for exactly this case: it uses an FM-index instead, needing only ~4-5 GB for the same genomes, both to build and to align against.
+
+Pass `-H` to switch every alignment step in PARALUS - the main genome alignment and, if used, the rRNA pre-mapping - from STAR to HISAT2. Nothing else about a run changes: same input formats, same output files and filenames, same T-to-C extraction and downstream steps. Internally, `--no-spliced-alignment --no-softclip` are used to match STAR's `--alignIntronMax 1 --alignEndsType EndToEnd` (no spliced alignment, no soft-clipping, on either aligner).
+
+The only practical difference is what `-x` and `-e` expect: with `-H`, they take a HISAT2 index **basename** (built with `hisat2-build`, not a directory) instead of a STAR genomeDir:
+
+```bash
+mkdir -p /path/to/genome_index
+hisat2-build /path/to/hg38.fa /path/to/genome_index/genome
+# pass -x /path/to/genome_index/genome -H
+```
+
+The optional rRNA index (`-e`) is built the same way:
+
+```bash
+mkdir -p /path/to/rRNA_index
+hisat2-build rRNA.fa /path/to/rRNA_index/rRNA
+# pass -e /path/to/rRNA_index/rRNA -H
+```
+
+See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 via conda.
+
 ---
 
 ## 7\. Troubleshooting
@@ -191,16 +217,16 @@ STAR --runMode genomeGenerate \\
 * **5-mer/metagene PDFs are missing** - these steps are skipped with a note in `_stats.txt` if `python3`/`matplotlib`/`numpy` aren't available, or if there is insufficient data for a given plot (e.g. too few clusters mapping to a particular region). Check `_stats.txt` for the specific reason.
 * **`STAR --version` fails with `GLIBC_X.XX not found`** - a known issue
 with bioconda's compiled STAR build on some systems. Install the
-official precompiled binary from the STAR GitHub release page directly (for Linux systems) or compile from source (for Mac). For detailed instructions on appropriate STAR installation in the different environments see our extended installation guide (INSTALLATION.md).
+official precompiled binary from the STAR GitHub release page directly (for Linux systems) or compile from source (for Mac). For detailed instructions on appropriate STAR installation in the different environments see our extended installation guide (INSTALLATION.md). If STAR remains impractical on your machine (e.g. limited RAM), consider HISAT2 mode (`-H`, Section 6.2) instead.
 
 **Error messages**
 
 * **"illegal option" errors** - flags are case-sensitive: `-G`/`-g` and
 `-C`/`-c` are different flags with different meanings.
-* **"STAR genome index not found"** - `-x` must point at the index
-*directory* (containing `SAindex`), not the genome FASTA.
+* **"STAR genome index not found"** / **"HISAT2 genome index not found"** - `-x` must point at the index
+*directory* (containing `SAindex`) for STAR, or at the index *basename* (e.g. `/path/genome_index/genome`, matching files like `genome.1.ht2`) for HISAT2 (`-H`) - not the genome FASTA either way.
 * **"please provide a genome.fa using the -f option"** - `-f` is required
-even when a STAR index already exists, since later steps
+even when a genome index already exists, since later steps
 (`samtools calmd`, `bedtools getfasta`) need the FASTA directly.
 * **"-A does not look like a proper annotation bed file"** - The `-A` flag expects a pre-built Trierarch BED file (`*_Paralus.bed`), not a raw GTF. To fix this, either run Trierarch standalone first with `--trierarch` and pass the resulting `*_Paralus.bed` to `-A`, or provide the raw GTF with `-G` and PARALUS will build the annotation BED before proceeding with the analysis.
 * **"This looks like GFF3, not GTF"** - The `-G` flag expects a raw GTF file, not a GFF3. If needed, convert the GFF3 to GTF first.
