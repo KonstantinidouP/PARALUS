@@ -1,4 +1,8 @@
 #!/bin/bash
+# Quick dependency check — warn but don't exit
+for tool in cutadapt samtools bedtools STAR; do
+    command -v "$tool" &>/dev/null || echo "[WARN] $tool not found in PATH"
+done
 # PARAlus is a bedtools and awk based program to analyze PAR-CLIP or CLIP data
 # created by Dimitrios Anastasakis
 # PARalus 1.5.1 this version was with addition of --outSAMmultNmax 1 --outMultimapperOrder Random 
