@@ -1,7 +1,7 @@
 # PARALUS Extended Manual
 
 This is the full manual for PARALUS and its companion annotation
-builder, Trierarch (`paralus_1.7.9.sh`). For a guided first run, see
+builder, Trierarch (`paralus_1.8.5.sh`). For a guided first run, see
 `README.md` instead - this document is for looking things up,
 not for a first-time walkthrough.
 
@@ -38,8 +38,8 @@ PARALUS needs, resolving overlapping annotations by an explicit priority order.
 Both tools are invoked from the same script:
 
 ```bash
-./paralus_1.7.9.sh --trierarch -G genes.gtf -C -O prefix   # Trierarch standalone run to pre-build the annotation BED
-./paralus_1.7.9.sh -i ... -x ... -A ... [options]         # a standard PARALUS run for PAR-CLIP / CLIP analysis
+./paralus_1.8.5.sh --trierarch -G genes.gtf -C -O prefix   # Trierarch standalone run to pre-build the annotation BED
+./paralus_1.8.5.sh -i ... -x ... -A ... [options]         # a standard PARALUS run for PAR-CLIP / CLIP analysis
 ```
 
 ---

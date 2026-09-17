@@ -63,7 +63,7 @@ STAR --version
 
 STAR needs its whole genome index in RAM, both to build it and to align against it - roughly 30 GB for human/mouse. That's out of reach on most Mac laptops with 16 GB of RAM or less. HISAT2 is a drop-in alternative aligner that uses an FM-index instead, needing only ~4-5 GB for the same genomes, both to build and to align against.
 
-If your machine can't comfortably run STAR, install HISAT2 instead and pass PARALUS the `-H` flag - see `./paralus_1.7.9.sh --help` for what changes (`-x`/`-e` then take a HISAT2 index basename, built with `hisat2-build`, instead of a STAR genomeDir).
+If your machine can't comfortably run STAR, install HISAT2 instead and pass PARALUS the `-H` flag - see `./paralus_1.8.5.sh --help` for what changes (`-x`/`-e` then take a HISAT2 index basename, built with `hisat2-build`, instead of a STAR genomeDir).
 
 HISAT2 installs cleanly via conda on both Linux and Apple Silicon, so no separate compile-from-source path is needed here the way it is for STAR:
 
@@ -158,13 +158,13 @@ Clone the repository to any location on your machine - PARALUS is a bash script 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-chmod +x paralus_1.7.9.sh
+chmod +x paralus_1.8.5.sh
 ```
 
 To view all available options:
 
 ```bash
-./paralus_1.7.9.sh --help
+./paralus_1.8.5.sh --help
 ```
 
 Before running PARALUS, make sure all dependencies are available in your environment. If using conda:
