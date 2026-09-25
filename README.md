@@ -160,7 +160,7 @@ STAR --runMode genomeGenerate \
 Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed FASTA file with the `-f` flag.
 
 <details>
-<summary><b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
+<summary>💡 <b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
 
 Instead of the STAR index above, you can build a HISAT2 index. It needs ~8 GB RAM to build, ~5 GB RAM to align and ~4.5 GB of disk for hg38:
 
@@ -210,7 +210,7 @@ STAR --runMode genomeGenerate \
 > **Note:** The `--genomeSAindexNbases 6` flag is required for small genomes - refer to the STAR manual for details. Pass the rRNA index folder to PARALUS with the `-e` flag.
 
 <details>
-<summary><b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
+<summary>💡 <b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
 
 Instead of the STAR rRNA index above, you can build a HISAT2 one:
 
