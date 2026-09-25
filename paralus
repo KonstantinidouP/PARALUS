@@ -21,3 +21,4 @@ if [ -z "${script}" ]; then
 fi
 
 exec bash "${script}" "$@"
+
