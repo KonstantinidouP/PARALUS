@@ -55,7 +55,7 @@ Runtime scales with input size and library complexity (unique reads remaining af
 
 PARALUS requires the following tools installed in your environment:
 
-- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.2b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (alternative aligner, selected with `-H` - recommended if you have less than 32 GB RAM)
+- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.11b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (alternative aligner, selected with `-H` - recommended if you have less than 32 GB RAM)
 - [samtools](http://www.htslib.org/) (tested with v1.22.1)
 - [bedtools](https://bedtools.readthedocs.io/) (tested with v2.31.1)
 - [cutadapt](https://cutadapt.readthedocs.io/)
