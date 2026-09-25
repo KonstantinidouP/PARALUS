@@ -1,43 +1,133 @@
-# PARALUS - Dependencies Installation Guide
+# PARALUS - Installation Guide
 
-This document provides detailed instructions for the installation of dependencies on Linux local machines and Apple Silicon Macs. If you are working on an HPC cluster (e.g. Biowulf), the required tools are likely already installed centrally and only need to be loaded before running PARALUS - refer to your cluster's documentation for instructions (e.g. `module load STAR`). For a quick start, see the main [README.md](README.md).
+This guide explains how to install PARALUS and its dependencies. Pick the section for your system and follow its steps in order. For a quick start, see the main [README.md](README.md).
+
+## Contents
+
+- [Linux](#linux)
+- [Mac (Apple Silicon)](#mac-apple-silicon)
+- [HPC clusters](#hpc-clusters)
+
+PARALUS needs the following tools: STAR (or HISAT2 as the low-RAM option), samtools, bedtools and cutadapt. python3 with matplotlib and numpy is optional and only needed for the PDF plots. PARALUS checks for the required tools at startup and stops with a list of any that are missing.
 
 ---
 
-## Installing STAR
+## Linux
 
-STAR is the most environment-sensitive dependency. We recommend installing it from the official pre-compiled static binary rather than via conda, as this avoids version conflicts and has been tested to work reliably.
+If the required tools are already installed on your machine or server (e.g. a shared lab server), skip to [step 4](#4-install-paralus). To check, run `which STAR samtools bedtools cutadapt` (use `hisat2` instead of `STAR` for the low-RAM option): each tool that prints a path is available. If some are missing, a conda environment (steps 1-2) is the easiest way to add them. It installs the tools in your own account, needs no admin rights and keeps them separate from other software on the system.
 
-### Linux
+### 1. Install Miniconda
 
-Download and install the pre-compiled static binary from the STAR GitHub releases page:
+Skip this step if you already have conda.
+
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+```
+
+### 2. Create a conda environment with the dependencies
+
+```bash
+conda create -n rnaseq -c bioconda -c conda-forge \
+    samtools bedtools cutadapt python matplotlib numpy
+```
+
+### 3. Install STAR
+
+We recommend the official pre-compiled static binary rather than conda, as it avoids version conflicts. The commands below install STAR 2.7.11b, the version PARALUS was tested with. To use a newer release, replace `2.7.11b` with its version number (see https://github.com/alexdobin/STAR/releases). If you change STAR versions, you may need to rebuild your genome index.
+
+Download and unzip STAR:
 
 ```bash
 wget https://github.com/alexdobin/STAR/releases/download/2.7.11b/STAR_2.7.11b.zip
 unzip STAR_2.7.11b.zip
-sudo cp STAR_2.7.11b/Linux_x86_64_static/STAR /usr/local/bin/
 ```
 
-Verify:
+Then install it in one of two ways:
+
+**With admin (`sudo`) rights**, install STAR system-wide:
 
 ```bash
+sudo cp STAR_2.7.11b/Linux_x86_64_static/STAR /usr/local/bin/
 STAR --version
 ```
 
-### Apple Silicon Mac (M1/M2/M3/M4) - compile from source
+**Without admin rights**, as is common on shared servers, install STAR in your home folder:
 
+```bash
+mkdir -p ~/bin
+cp STAR_2.7.11b/Linux_x86_64_static/STAR ~/bin/
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+STAR --version
+```
 
+**Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM).** Install HISAT2 into the same environment instead of STAR:
 
-1. Install Homebrew and GNU gcc
+```bash
+conda install -n rnaseq -c bioconda -c conda-forge hisat2
+hisat2 --version
+```
 
-Install Homebrew from https://brew.sh if you don't have it, then:
+HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS with the `-H` flag, and pass `-x`/`-e` the HISAT2 index basename (e.g. `/path/to/genome_index/genome`, not the folder). See [README.md](README.md) for building the HISAT2 genome and rRNA indexes.
+
+### 4. Install PARALUS
+
+Clone the repository to any location on your machine. PARALUS is a bash script and does not need to be installed in the conda environment. The script name includes the version number, which may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
+
+```bash
+git clone https://github.com/KonstantinidouP/PARALUS.git
+cd PARALUS
+chmod +x paralus_1.8.7.sh
+./paralus_1.8.7.sh --help
+```
+
+### 5. Before each run
+
+If you installed the dependencies in a conda environment (steps 1-2), activate it before each run:
+
+```bash
+conda activate rnaseq
+```
+
+---
+
+## Mac (Apple Silicon)
+
+These steps are for Macs with M1, M2, M3 or M4 chips. Most Macs don't come with these tools, so follow all steps unless you've installed them before.
+
+### 1. Install Miniconda
+
+Skip this step if you already have conda.
+
+```bash
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+bash Miniconda3-latest-MacOSX-arm64.sh
+source ~/.zshrc
+```
+
+### 2. Create a conda environment with the dependencies
+
+```bash
+conda create -n rnaseq -c bioconda -c conda-forge \
+    samtools bedtools cutadapt python matplotlib numpy
+```
+
+> **Note:** The command above doesn't pin versions, so conda picks the latest compatible ones. You can pin a specific version if you need one (e.g. `samtools=1.17`), but if that version isn't available for ARM64, conda will stop with a `PackagesNotFoundError`. Keep both `-c bioconda` and `-c conda-forge` - with bioconda alone, some packages may fail to resolve on Apple Silicon.
+
+### 3. Install STAR (compile from source)
+
+STAR has no pre-compiled binary for Apple Silicon, so it needs to be compiled. The commands below compile STAR 2.7.11b, the version PARALUS was tested with. To use a newer release, replace `2.7.11b` with its version number (see https://github.com/alexdobin/STAR/releases). If you change STAR versions, you may need to rebuild your genome index.
+
+**a. Install Homebrew and GNU gcc.** Install Homebrew from https://brew.sh if you don't have it, then:
 
 ```bash
 brew install gcc
-ls /opt/homebrew/bin/g++*   # note the version, e.g. g++-15
+ls /opt/homebrew/bin/g++*   # note the version in the output, e.g. g++-15
 ```
 
-2. Clone and compile STAR
+**b. Clone and compile STAR:**
 
 ```bash
 cd ~
@@ -48,86 +138,38 @@ cd source
 make STARforMacStatic CXX=/opt/homebrew/bin/g++-15 CXXFLAGS_SIMD=
 ```
 
-Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` suppresses the `-mavx2` flag, which is x86-only and does not exist on ARM64 - this does not affect performance. Compilation takes a few minutes; warnings are harmless.
+Replace `g++-15` with the version you found above. `CXXFLAGS_SIMD=` removes the `-mavx2` flag, which is x86-only and does not exist on ARM64. Compilation takes a few minutes, and the warnings it prints are harmless.
 
-3. Install and verify:
+**c. Install and verify:**
 
 ```bash
 sudo cp ~/STAR/source/STAR /usr/local/bin/
 STAR --version
 ```
 
----
-
-## Installing HISAT2 (alternative to STAR - for Macs with 16 GB RAM or less)
-
-STAR needs its whole genome index in RAM, both to build it and to align against it - roughly 30 GB for human/mouse. That's out of reach on most Mac laptops with 16 GB of RAM or less. HISAT2 is a drop-in alternative aligner that uses an FM-index instead, needing only ~4-5 GB for the same genomes, both to build and to align against.
-
-If your machine can't comfortably run STAR, install HISAT2 instead and pass PARALUS the `-H` flag - see `./paralus_1.8.5.sh --help` for what changes (`-x`/`-e` then take a HISAT2 index basename, built with `hisat2-build`, instead of a STAR genomeDir).
-
-HISAT2 installs cleanly via conda on both Linux and Apple Silicon, so no separate compile-from-source path is needed here the way it is for STAR:
+**Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM).** Install HISAT2 into the same environment instead of STAR. It installs through conda, so no compiling is needed:
 
 ```bash
 conda install -n rnaseq -c bioconda -c conda-forge hisat2
-```
-
-(or add `hisat2` to the package list in the `conda create` command below if you're setting the environment up for the first time.)
-
-Verify:
-
-```bash
 hisat2 --version
 ```
 
-Building a HISAT2 index is a one-time step per genome, similar to STAR's `--genomeGenerate`, but with far lower memory and disk requirements:
+HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS with the `-H` flag, and pass `-x`/`-e` the HISAT2 index basename (e.g. `/path/to/genome_index/genome`, not the folder). See [README.md](README.md) for building the HISAT2 genome and rRNA indexes.
+
+### 4. Install PARALUS
+
+Clone the repository to any location on your Mac. PARALUS is a bash script and does not need to be installed in the conda environment. The script name includes the version number, which may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
 
 ```bash
-mkdir -p /path/to/genome_index
-hisat2-build /path/to/hg38.fa /path/to/genome_index/genome
+git clone https://github.com/KonstantinidouP/PARALUS.git
+cd PARALUS
+chmod +x paralus_1.8.7.sh
+./paralus_1.8.7.sh --help
 ```
 
-Pass the resulting basename (`/path/to/genome_index/genome`, not a directory) to PARALUS with `-x -H`. The same applies to the optional rRNA index used with `-e` - see the HISAT2 note in [README.md](README.md#step-3---download-the-reference-genome-and-build-a-star-index-run-once-per-genome) for the equivalent rRNA-index command.
+### 5. Before each run
 
----
-
-## Installing all other dependencies via conda
-
-### Installing Miniconda
-
-If you don't have conda, install Miniconda first.
-
-**Linux:**
-
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-shasum -a 256 Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-source ~/.bashrc
-```
-
-**Mac (Apple Silicon):**
-
-```bash
-curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
-shasum -a 256 Miniconda3-latest-MacOSX-arm64.sh
-bash Miniconda3-latest-MacOSX-arm64.sh
-source ~/.zshrc
-```
-
-Verify the installer hash against the one listed at https://docs.anaconda.com/miniconda/miniconda-hashes/ before running it.
-
-### Create a conda environment and install dependencies
-
-```bash
-conda create -n rnaseq -c bioconda -c conda-forge \
-    samtools bedtools cutadapt python matplotlib numpy
-```
-
-> **Tip:** if you're using HISAT2 instead of STAR (see above, recommended for Macs with ≤16 GB RAM), add `hisat2` to this package list so it's installed in the same environment: `conda create -n rnaseq -c bioconda -c conda-forge samtools bedtools cutadapt python matplotlib numpy hisat2`.
-
-> **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`. Including both `-c bioconda` and `-c conda-forge` is important - some packages may fail to resolve dependencies with bioconda alone on Apple Silicon.
-
-### Activate the conda environment before running PARALUS
+If you installed the dependencies in a conda environment (steps 1-2), activate it before each run:
 
 ```bash
 conda activate rnaseq
@@ -135,9 +177,13 @@ conda activate rnaseq
 
 ---
 
-## HPC clusters (e.g. Biowulf/NIH) - module load
+## HPC clusters
 
-On clusters where the required tools are already centrally installed, load them before running PARALUS. The exact module names vary by cluster - the following is an example for Biowulf/NIH:
+On most clusters (e.g. Biowulf/NIH), the required tools are already installed centrally and only need to be loaded.
+
+### 1. Load the dependencies
+
+Module names vary by cluster. Example for Biowulf/NIH:
 
 ```bash
 module load star/2.7.11b
@@ -147,30 +193,19 @@ module load cutadapt
 module load python
 ```
 
-Run these lines before running PARALUS or add them to the top of your submission script. If using HISAT2 instead of STAR (`-H`), load `module load hisat2` in place of the `star` module - exact module name varies by cluster.
+To use HISAT2 instead of STAR (`-H`), load `hisat2` in place of the `star` module. If a tool isn't available as a module on your cluster, install it with conda as described in the [Linux](#linux) section.
 
----
+### 2. Install PARALUS
 
-## Installing PARALUS
-
-Clone the repository to any location on your machine - PARALUS is a bash script and does not need to be installed in the conda environment:
+Clone the repository to your home or project directory. The script name includes the version number, which may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-chmod +x paralus_1.8.5.sh
+chmod +x paralus_1.8.7.sh
+./paralus_1.8.7.sh --help
 ```
 
-To view all available options:
+### 3. Before each run
 
-```bash
-./paralus_1.8.5.sh --help
-```
-
-Before running PARALUS, make sure all dependencies are available in your environment. If using conda:
-
-```bash
-conda activate rnaseq
-```
-
-On HPC clusters, load the required modules as described above instead.
+Load the modules from step 1 in your session, or add the `module load` lines to the top of your job submission script.
