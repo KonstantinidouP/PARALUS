@@ -33,7 +33,9 @@ PARALUS includes **Trierarch**, a built-in annotation builder that generates the
 
 ## Performance & Accessibility
 
-PARALUS is designed to be fast, self-contained, and accessible - running on any Linux or Mac machine with a single command. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine. Users with less RAM should consider running on a server.
+PARALUS is designed to be fast, self-contained, and accessible - running on any Linux or Mac machine with a single command. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine with STAR.
+
+**Have less RAM (e.g. most 16 GB Mac laptops)?** Use the `-H` flag to switch PARALUS from STAR to HISAT2, which needs only ~4-5 GB RAM to build and align against the same genomes. Everything else about the run is identical - same inputs, same outputs, just a lighter aligner underneath. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 and building a HISAT2 index, and the `-H` entry in `./paralus_1.8.5.sh --help` for details. Users on a shared server with plenty of RAM can keep using the STAR default.
 
 PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads:
 
@@ -53,7 +55,7 @@ Runtime scales with input size and library complexity, ranging from ~2.5 minutes
 
 PARALUS requires the following tools installed in your environment:
 
-- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.2b)
+- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.2b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (alternative aligner, selected with `-H` - recommended if you have 16 GB RAM or less, e.g. most Mac laptops)
 - [samtools](http://www.htslib.org/) (tested with v1.17)
 - [bedtools](https://bedtools.readthedocs.io/) (tested with v2.29.2)
 - [cutadapt](https://cutadapt.readthedocs.io/)
@@ -74,13 +76,13 @@ Clone the repository to any location on your machine - PARALUS is a bash script 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-chmod +x paralus_1.7.3.sh
+chmod +x paralus_1.8.5.sh
 ```
 
 To view all available options:
 
 ```bash
-./paralus_1.7.3.sh --help
+./paralus_1.8.5.sh --help
 ```
 
 Before running PARALUS, make sure all dependencies are available in your environment. See [INSTALLATION.md](INSTALLATION.md) for details on how to install and activate the dependencies for different systems.
@@ -92,7 +94,7 @@ Trierarch requires a gene annotation GTF file and optionally a tRNA BED file and
 We recommend downloading the latest comprehensive gene annotation GTF for your organism from **GENCODE** (https://www.gencodegenes.org) or **Ensembl** (https://www.ensembl.org), and optionally the tRNA annotation BED file from the **Genomic tRNA Database (GtRNAdb)** (https://gtrnadb.ucsc.edu) and/or the miRNA annotation GFF3 from **miRBase** (https://www.mirbase.org/download/). Download links and instructions for various organisms can be found in the PARALUS help page. Run the following command to view:
 
 ```bash
-bash paralus_1.7.3.sh --trierarch --help
+bash paralus_1.8.5.sh --trierarch --help
 ```
 
 #### Build the annotation BED file with Trierarch
@@ -100,7 +102,7 @@ bash paralus_1.7.3.sh --trierarch --help
 Trierarch is built into PARALUS and produces the annotation BED file from the GTF. Using canonical transcripts only (the `-C` option) is recommended for cleaner annotation:
 
 ```bash
-bash paralus_1.7.3.sh --trierarch \
+bash paralus_1.8.5.sh --trierarch \
   -G gencode.v49.annotation.gtf \
   -T hg38-tRNAs.bed \
   -C \
@@ -148,6 +150,15 @@ STAR --runMode genomeGenerate \
 
 Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed FASTA file with the `-f` flag.
 
+**On a Mac with 16 GB RAM or less?** Build a HISAT2 index instead - it needs only ~4-5 GB RAM and ~4-5 GB disk for the same genome, versus STAR's ~30 GB / ≥32 GB RAM above:
+
+```bash
+mkdir -p /path/to/genome_index
+hisat2-build /path/to/hg38.fa /path/to/genome_index/genome
+```
+
+Pass the resulting index basename (`/path/to/genome_index/genome`, not a directory) to PARALUS with `-x`, together with the `-H` flag to switch PARALUS to HISAT2 mode. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2.
+
 ### Step 3b - Download rRNA sequences and build an rRNA index (OPTIONAL - run once per genome)
 
 This step is only needed if you want to use the rRNA depletion option in PARALUS (the `-e` flag). It removes rRNA-mapping reads before genome alignment, which can significantly improve the signal-to-noise ratio in your data.
@@ -182,6 +193,15 @@ STAR --runMode genomeGenerate \
 
 > **Note:** The `--genomeSAindexNbases 6` flag is required for small genomes - refer to the STAR manual for details. Pass the rRNA index folder to PARALUS with the `-e` flag.
 
+**Using `-H` (HISAT2)?** Build the rRNA index the same way as the main genome index above:
+
+```bash
+mkdir -p /path/to/rRNA_index
+hisat2-build rRNA.fa /path/to/rRNA_index/rRNA
+```
+
+Pass the resulting basename (`/path/to/rRNA_index/rRNA`) to PARALUS with `-e`.
+
 ### Step 4 - Run PARALUS
 
 Make sure all dependencies are loaded or activated before running. See [INSTALLATION.md](INSTALLATION.md) for instructions tailored to your system.
@@ -189,7 +209,7 @@ Make sure all dependencies are loaded or activated before running. See [INSTALLA
 **Option A - using a pre-built annotation BED file:**
 
 ```bash
-bash paralus_1.7.3.sh \
+bash paralus_1.8.5.sh \
   -i sample.fastq.gz \
   -x /path/to/genome_index \
   -A /path/to/annotation_Paralus.bed \
@@ -203,7 +223,7 @@ bash paralus_1.7.3.sh \
 **Option B - using a GTF directly (Trierarch runs automatically):**
 
 ```bash
-bash paralus_1.7.3.sh \
+bash paralus_1.8.5.sh \
   -i sample.fastq.gz \
   -x /path/to/genome_index \
   -G /path/to/gencode.gtf \
@@ -226,7 +246,7 @@ bash paralus_1.7.3.sh \
 | Flag | Description |
 |------|-------------|
 | `-i` | Input file (FASTQ.gz / FASTQ / FASTA) |
-| `-x` | Path to STAR genome index directory |
+| `-x` | Path to genome index (STAR genomeDir by default; a HISAT2 index basename if `-H` is set) |
 | `-A` | Annotation BED file generated by Trierarch - required unless `-G` is used |
 | `-f` | Genome FASTA file |
 
@@ -239,7 +259,8 @@ bash paralus_1.7.3.sh \
 | `-u` | Bases to trim from 5' end (UMIs) | `0` |
 | `-n` | Minimum read length after trimming | `19` |
 | `-p` | Threads | `8` |
-| `-e` | Path to rRNA genome index for pre-depletion | none |
+| `-e` | Path to rRNA genome index for pre-depletion (STAR genomeDir, or HISAT2 basename if `-H` is set) | none |
+| `-H` | Use HISAT2 instead of STAR for all alignment steps - needs ~4-5 GB RAM vs. STAR's ~30 GB for a human/mouse genome, recommended for Macs with ≤16 GB RAM. `-x`/`-e` must then be HISAT2 index basenames (see [INSTALLATION.md](INSTALLATION.md)) | off (STAR) |
 
 ### Annotation
 
@@ -251,6 +272,7 @@ The following flags are only relevant when `-G` is set:
 | `-T` | tRNA BED file from GtRNAdb - used with `-G` to include tRNA annotations (optional) |
 | `-M` | miRNA GFF3 file from miRBase, or a BED6 file in the same format as `-T` - used with `-G` to include miRNA annotations (optional) |
 | `-C` | Use canonical/MANE transcripts only - used with `-G`, recommended for GENCODE/Ensembl |
+| `-U` | Keep genes with no `gene_name` attribute, using their Ensembl accession (e.g. `ENSG...`) as the display name instead - used with `-G`. Off by default; without it, unnamed genes are excluded from the annotation BED and any clusters overlapping them appear as unannotated. |
 
 ### Cluster calling
 
@@ -303,7 +325,7 @@ The following example shows PARALUS output from a PAR-CLIP experiment with CPSF1
 
 ```
 PARALUS/
-├── paralus_1.7.3.sh         # Main pipeline script (includes Trierarch)
+├── paralus_1.8.5.sh         # Main pipeline script (includes Trierarch)
 ├── INSTALLATION.md          # Detailed dependencies installation instructions for all environments
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
 └── README.md

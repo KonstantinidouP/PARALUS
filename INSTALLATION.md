@@ -59,6 +59,37 @@ STAR --version
 
 ---
 
+## Installing HISAT2 (alternative to STAR - for Macs with 16 GB RAM or less)
+
+STAR needs its whole genome index in RAM, both to build it and to align against it - roughly 30 GB for human/mouse. That's out of reach on most Mac laptops with 16 GB of RAM or less. HISAT2 is a drop-in alternative aligner that uses an FM-index instead, needing only ~4-5 GB for the same genomes, both to build and to align against.
+
+If your machine can't comfortably run STAR, install HISAT2 instead and pass PARALUS the `-H` flag - see `./paralus_1.8.5.sh --help` for what changes (`-x`/`-e` then take a HISAT2 index basename, built with `hisat2-build`, instead of a STAR genomeDir).
+
+HISAT2 installs cleanly via conda on both Linux and Apple Silicon, so no separate compile-from-source path is needed here the way it is for STAR:
+
+```bash
+conda install -n rnaseq -c bioconda -c conda-forge hisat2
+```
+
+(or add `hisat2` to the package list in the `conda create` command below if you're setting the environment up for the first time.)
+
+Verify:
+
+```bash
+hisat2 --version
+```
+
+Building a HISAT2 index is a one-time step per genome, similar to STAR's `--genomeGenerate`, but with far lower memory and disk requirements:
+
+```bash
+mkdir -p /path/to/genome_index
+hisat2-build /path/to/hg38.fa /path/to/genome_index/genome
+```
+
+Pass the resulting basename (`/path/to/genome_index/genome`, not a directory) to PARALUS with `-x -H`. The same applies to the optional rRNA index used with `-e` - see the HISAT2 note in [README.md](README.md#step-3---download-the-reference-genome-and-build-a-star-index-run-once-per-genome) for the equivalent rRNA-index command.
+
+---
+
 ## Installing all other dependencies via conda
 
 ### Installing Miniconda
@@ -92,6 +123,8 @@ conda create -n rnaseq -c bioconda -c conda-forge \
     samtools bedtools cutadapt python matplotlib numpy
 ```
 
+> **Tip:** if you're using HISAT2 instead of STAR (see above, recommended for Macs with ≤16 GB RAM), add `hisat2` to this package list so it's installed in the same environment: `conda create -n rnaseq -c bioconda -c conda-forge samtools bedtools cutadapt python matplotlib numpy hisat2`.
+
 > **Note:** Specific version pins (e.g. `samtools=1.17`) may not be available for ARM64. Drop version pins and let conda pick the latest compatible versions if you get a `PackagesNotFoundError`. Including both `-c bioconda` and `-c conda-forge` is important - some packages may fail to resolve dependencies with bioconda alone on Apple Silicon.
 
 ### Activate the conda environment before running PARALUS
@@ -114,7 +147,7 @@ module load cutadapt
 module load python
 ```
 
-Run these lines before running PARALUS or add them to the top of your submission script.
+Run these lines before running PARALUS or add them to the top of your submission script. If using HISAT2 instead of STAR (`-H`), load `module load hisat2` in place of the `star` module - exact module name varies by cluster.
 
 ---
 
@@ -125,13 +158,13 @@ Clone the repository to any location on your machine - PARALUS is a bash script 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-chmod +x paralus_1.7.1.sh
+chmod +x paralus_1.8.5.sh
 ```
 
 To view all available options:
 
 ```bash
-./paralus_1.7.1.sh --help
+./paralus_1.8.5.sh --help
 ```
 
 Before running PARALUS, make sure all dependencies are available in your environment. If using conda:
