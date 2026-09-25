@@ -27,6 +27,12 @@ source ~/.bashrc
 
 On a Mac, use `~/.zshrc` instead of `~/.bashrc`.
 
+Check that it worked:
+
+```bash
+paralus --help
+```
+
 ### 2. Install the dependencies
 
 From inside the PARALUS folder, run:
