@@ -2,15 +2,15 @@
 
 > **A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis**
 
-PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated crosslink clusters, and includes k-mer enrichment analysis to identify sequence preferences at RNA-protein binding sites.
+PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites, and includes k-mer enrichment analysis to identify sequence preferences.
 
 ---
 
 ## Overview
 
-PARALUS takes CLIP or PAR-CLIP sequencing data as input and outputs high-confidence RNA-protein binding clusters with full annotation, crosslink site information, and binding statistics. The pipeline handles adapter trimming, read collapsing, genome alignment, T-to-C crosslink site extraction (relevant for PAR-CLIP data), peak calling with read distribution modeling, and genomic annotation - all in a single run.
+PARALUS takes CLIP or PAR-CLIP sequencing data as input and outputs RBP binding sites (clusters) with full annotation, crosslink site information, and binding statistics. The pipeline handles adapter trimming, duplicate read collapsing, genome alignment, T-to-C crosslink site extraction (relevant for PAR-CLIP data), peak calling with read distribution modeling, and genomic annotation - all in a single run.
 
-PARALUS includes **Trierarch**, a built-in annotation builder that generates the custom annotation BED file directly from a Gencode/Ensembl GTF file. Trierarch is embedded in the same script and can be run standalone using the `--trierarch` mode, or triggered within a PARALUS run by providing a GTF file with the `-G` flag.
+PARALUS includes **Trierarch**, a companion annotation module that generates a custom annotation BED file directly from a Gencode/Ensembl GTF file. Trierarch is embedded in the same script and can be run standalone using the `--trierarch` mode, or triggered within a PARALUS run by providing a GTF file with the `-G` flag.
 
 ---
 
@@ -20,10 +20,10 @@ PARALUS includes **Trierarch**, a built-in annotation builder that generates the
 - Optional UMI trimming and adapter removal via cutadapt
 - Optional rRNA depletion by pre-mapping to an rRNA genome index
 - T-to-C crosslink site extraction from PAR-CLIP data at single-nucleotide resolution
-- Two-stage peak calling based on read distribution modeling (normal and non-normal clusters)
+- Two-stage peak calling based on read distribution modeling that filters out artifacts and background
 - Gene name, feature, biotype, read counts, and T-to-C conversion metrics per cluster
 - Resolution of overlapping annotations by priority-ranked feature assignment
-- Built-in annotation builder (Trierarch); supports canonical transcripts only (`-C`), optional tRNA (`-T`) and miRNA (`-M`) databases
+- Built-in annotation module (Trierarch); supports canonical transcripts only (`-C`), optional tRNA (`-T`) and miRNA (`-M`) databases
 - 5-mer enrichment analysis at binding sites vs. background, with optional PDF scatter plot output
 - Metagene analysis plots for UTR/CDS and intron binding distribution (optional PDF output)
 - Full run logging to a timestamped log file
@@ -35,19 +35,19 @@ PARALUS includes **Trierarch**, a built-in annotation builder that generates the
 
 PARALUS is designed to be fast, self-contained, and accessible - running on any Linux or Mac machine with a single command. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine with STAR.
 
-**Have less RAM (e.g. most 16 GB Mac laptops)?** Use the `-H` flag to switch PARALUS from STAR to HISAT2, which needs only ~4-5 GB RAM to build and align against the same genomes. Everything else about the run is identical - same inputs, same outputs, just a lighter aligner underneath. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 and building a HISAT2 index, and the `-H` entry in `./paralus_1.8.5.sh --help` for details. Users on a shared server with plenty of RAM can keep using the STAR default.
+**Low-RAM option.** On machines with limited RAM (less than 32 GB), use the `-H` flag to align with HISAT2 instead of STAR. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 and building a HISAT2 index, and the `-H` entry in `./paralus_1.8.7.sh --help` for details. HISAT2 needs far less memory and recovers the same biological signal: on CPSF1, both aligners showed the 3'UTR binding spike and enrichment of the AATAAA polyadenylation signal. HISAT2 reports fewer clusters (845 vs. 1,241 with STAR), so STAR is recommended when memory allows and maximum sensitivity matters.
 
-PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads:
+PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads (`-p 4`):
 
 | Dataset | Input FASTQ.gz size | Raw reads | Unique reads (after collapsing) | Runtime (minutes) | CPU |
 |---|---|---|---|---|---|
-| CPSF1 (SRR13313335) | 238 MB | 9,135,633 | 2,142,567 | 2:32.39 (~2.5 min) | 112% |
+| CPSF1 (SRR13313335) | 238 MB | 9,135,633 | 2,142,567 | 2:29.85 (~2.5 min) | 113% |
 | KHSRP (SRR13313340) | 559 MB | 19,992,492 | 8,878,651 | 7:06.72 (~7.1 min) | 173% |
 | U2AF1 (SRR8606876) | 1.4 GB | 54,284,359 | 10,680,775 | 14:21.47 (~14.4 min) | 147% |
 
-Runtime scales with input size and library complexity, ranging from ~2.5 minutes for a 238 MB dataset to ~14.4 minutes for a 1.4 GB dataset. CPU utilization consistently exceeded 100%, reflecting effective use of multi-core processing. All analyses completed on a local Mac laptop without requiring access to an HPC cluster.
+Runtime scales with input size and library complexity (unique reads remaining after collapsing duplicates), ranging from ~2.5 minutes for a 238 MB dataset to ~14.4 minutes for a 1.4 GB dataset. CPU utilization of 113-173% shows that part of the run uses multiple cores. All analyses completed on a local Mac laptop without requiring access to an HPC cluster.
 
-> **Note:** Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk speed and available RAM can be as important as CPU core count. For large datasets or batch processing of multiple samples, running on a Linux server is recommended.
+> **Note:** Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk speed and available RAM can be as important as CPU core count. Running PARALUS on a Linux server can be beneficial when analyzing large datasets or batch processing multiple samples.
 
 ---
 
@@ -55,9 +55,9 @@ Runtime scales with input size and library complexity, ranging from ~2.5 minutes
 
 PARALUS requires the following tools installed in your environment:
 
-- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.2b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (alternative aligner, selected with `-H` - recommended if you have 16 GB RAM or less, e.g. most Mac laptops)
-- [samtools](http://www.htslib.org/) (tested with v1.17)
-- [bedtools](https://bedtools.readthedocs.io/) (tested with v2.29.2)
+- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.2b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (alternative aligner, selected with `-H` - recommended if you have less than 32 GB RAM)
+- [samtools](http://www.htslib.org/) (tested with v1.22.1)
+- [bedtools](https://bedtools.readthedocs.io/) (tested with v2.31.1)
 - [cutadapt](https://cutadapt.readthedocs.io/)
 - python3 (OPTIONAL - required for PDF plot output)
 - matplotlib (OPTIONAL - required for PDF plot output)
@@ -76,13 +76,13 @@ Clone the repository to any location on your machine - PARALUS is a bash script 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-chmod +x paralus_1.8.5.sh
+chmod +x paralus_1.8.7.sh
 ```
 
 To view all available options:
 
 ```bash
-./paralus_1.8.5.sh --help
+./paralus_1.8.7.sh --help
 ```
 
 Before running PARALUS, make sure all dependencies are available in your environment. See [INSTALLATION.md](INSTALLATION.md) for details on how to install and activate the dependencies for different systems.
@@ -94,7 +94,7 @@ Trierarch requires a gene annotation GTF file and optionally a tRNA BED file and
 We recommend downloading the latest comprehensive gene annotation GTF for your organism from **GENCODE** (https://www.gencodegenes.org) or **Ensembl** (https://www.ensembl.org), and optionally the tRNA annotation BED file from the **Genomic tRNA Database (GtRNAdb)** (https://gtrnadb.ucsc.edu) and/or the miRNA annotation GFF3 from **miRBase** (https://www.mirbase.org/download/). Download links and instructions for various organisms can be found in the PARALUS help page. Run the following command to view:
 
 ```bash
-bash paralus_1.8.5.sh --trierarch --help
+bash paralus_1.8.7.sh --trierarch --help
 ```
 
 #### Build the annotation BED file with Trierarch
@@ -102,7 +102,7 @@ bash paralus_1.8.5.sh --trierarch --help
 Trierarch is built into PARALUS and produces the annotation BED file from the GTF. Using canonical transcripts only (the `-C` option) is recommended for cleaner annotation:
 
 ```bash
-bash paralus_1.8.5.sh --trierarch \
+bash paralus_1.8.7.sh --trierarch \
   -G gencode.v49.annotation.gtf \
   -T hg38-tRNAs.bed \
   -C \
@@ -113,9 +113,9 @@ This produces `gencode.v49.annotation_Trierarch_canonical_Paralus.bed` to use wi
 
 ### Step 3 - Download the reference genome and build a STAR index (run once per genome)
 
-You need the reference genome of your organism of interest in FASTA format. If you don't have it yet, download it from UCSC. These are large files (~1 GB compressed) - make sure you have enough disk space.
+You need the reference genome of your organism of interest in FASTA format. If you don't have it yet, download it from UCSC. These are large files (~1 GB compressed) - make sure you have enough disk space. Below is an example for the human genome (hg38).
 
-For human (hg38) — Linux:
+Linux:
 
 ```bash
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
@@ -127,17 +127,10 @@ Mac (curl is pre-installed):
 curl -o hg38.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
 ```
 
-Decompress the FASTA - STAR requires an uncompressed file for genome index generation:
+Decompress the FASTA (decompressed file will be ~3.5 GB for hg38) and build the STAR genome index. This is a one-time step per genome and requires ~30 GB of disk space and significant RAM (≥32 GB recommended):
 
 ```bash
 gunzip -k hg38.fa.gz
-```
-
-The decompressed file will be ~3.5 GB for hg38.
-
-Then build the STAR genome index. This is a one-time step per genome and requires ~30 GB of disk space and significant RAM (≥32 GB recommended):
-
-```bash
 mkdir /path/to/genome_index
 STAR --runMode genomeGenerate \
      --genomeDir /path/to/genome_index \
@@ -150,7 +143,7 @@ STAR --runMode genomeGenerate \
 
 Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed FASTA file with the `-f` flag.
 
-**On a Mac with 16 GB RAM or less?** Build a HISAT2 index instead - it needs only ~4-5 GB RAM and ~4-5 GB disk for the same genome, versus STAR's ~30 GB / ≥32 GB RAM above:
+**Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM).** Build a HISAT2 index instead - it needs ~8 GB RAM to build, ~5 GB RAM to align and ~4.5 GB of disk for hg38:
 
 ```bash
 mkdir -p /path/to/genome_index
@@ -163,7 +156,7 @@ Pass the resulting index basename (`/path/to/genome_index/genome`, not a directo
 
 This step is only needed if you want to use the rRNA depletion option in PARALUS (the `-e` flag). It removes rRNA-mapping reads before genome alignment, which can significantly improve the signal-to-noise ratio in your data.
 
-Download the human rRNA sequences and build a STAR index. On Linux, `wget` is available by default. On Mac, use `curl` (pre-installed) or install `wget` via `brew install wget`:
+Download the human rRNA sequences:
 
 Linux:
 
@@ -179,7 +172,9 @@ curl -o U13369.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/U13369.1?dow
 curl -o X12811.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/X12811.1?download=true"
 ```
 
-Alternatively, both sequences can be downloaded manually from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide) - search for accessions `U13369.1` (45S rDNA repeat unit) and `X12811.1` (5S rRNA), download each as FASTA, then run:
+Alternatively, both sequences can be downloaded manually from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide) - search for accessions `U13369.1` (45S rDNA repeat unit) and `X12811.1` (5S rRNA), download each as FASTA.
+
+Then concatenate the two files and build a STAR index:
 
 ```bash
 cat U13369.1.fasta X12811.1.fasta > rRNA.fa
@@ -193,7 +188,7 @@ STAR --runMode genomeGenerate \
 
 > **Note:** The `--genomeSAindexNbases 6` flag is required for small genomes - refer to the STAR manual for details. Pass the rRNA index folder to PARALUS with the `-e` flag.
 
-**Using `-H` (HISAT2)?** Build the rRNA index the same way as the main genome index above:
+**Low-RAM option with HISAT2.** Build the rRNA index the same way as the main genome index above:
 
 ```bash
 mkdir -p /path/to/rRNA_index
@@ -209,8 +204,8 @@ Make sure all dependencies are loaded or activated before running. See [INSTALLA
 **Option A - using a pre-built annotation BED file:**
 
 ```bash
-bash paralus_1.8.5.sh \
-  -i sample.fastq.gz \
+bash paralus_1.8.7.sh \
+  -i /path/to/sample.fastq.gz \
   -x /path/to/genome_index \
   -A /path/to/annotation_Paralus.bed \
   -f /path/to/genome.fa \
@@ -223,8 +218,8 @@ bash paralus_1.8.5.sh \
 **Option B - using a GTF directly (Trierarch runs automatically):**
 
 ```bash
-bash paralus_1.8.5.sh \
-  -i sample.fastq.gz \
+bash paralus_1.8.7.sh \
+  -i /path/to/sample.fastq.gz \
   -x /path/to/genome_index \
   -G /path/to/gencode.gtf \
   -T /path/to/hg38-tRNAs.bed \
@@ -245,10 +240,10 @@ bash paralus_1.8.5.sh \
 
 | Flag | Description |
 |------|-------------|
-| `-i` | Input file (FASTQ.gz / FASTQ / FASTA) |
+| `-i` | Path to the input file (FASTQ.gz / FASTQ / FASTA). Output files are written to the same folder. |
 | `-x` | Path to genome index (STAR genomeDir by default; a HISAT2 index basename if `-H` is set) |
-| `-A` | Annotation BED file generated by Trierarch - required unless `-G` is used |
-| `-f` | Genome FASTA file |
+| `-A` | Path to the annotation BED file generated by Trierarch - required unless `-G` is used |
+| `-f` | Path to the genome FASTA file (uncompressed) |
 
 ### Preprocessing
 
@@ -260,7 +255,7 @@ bash paralus_1.8.5.sh \
 | `-n` | Minimum read length after trimming | `19` |
 | `-p` | Threads | `8` |
 | `-e` | Path to rRNA genome index for pre-depletion (STAR genomeDir, or HISAT2 basename if `-H` is set) | none |
-| `-H` | Use HISAT2 instead of STAR for all alignment steps - needs ~4-5 GB RAM vs. STAR's ~30 GB for a human/mouse genome, recommended for Macs with ≤16 GB RAM. `-x`/`-e` must then be HISAT2 index basenames (see [INSTALLATION.md](INSTALLATION.md)) | off (STAR) |
+| `-H` | Use HISAT2 instead of STAR for all alignment steps. Option for low-RAM machines. HISAT2 needs ~8 GB RAM to build the index and ~5 GB to align. `-x`/`-e` must then be HISAT2 index basenames (see [INSTALLATION.md](INSTALLATION.md)) | off |
 
 ### Annotation
 
@@ -282,7 +277,7 @@ The following flags are only relevant when `-G` is set:
 | `-c` | Minimum T-to-C conversion locations per cluster | `1` |
 | `-r` | Minimum fraction of T-to-C reads per cluster | `0.3` |
 
-> **CLIP mode:** Set both `-c 0` and `-r 0` to run PARALUS in CLIP mode (no T-to-C signal expected). In this mode, T-to-C extraction is skipped and all groups are promoted to clusters. Both flags must be set to `0` together — setting only one to `0` will produce an error.
+> **CLIP mode:** Set both `-c 0` and `-r 0` to run PARALUS in CLIP mode (no T-to-C signal expected). In this mode, T-to-C extraction is skipped and all groups are promoted to clusters. Both flags must be set to `0` together - setting only one to `0` will produce an error.
 
 ---
 
@@ -311,6 +306,15 @@ The following flags are only relevant when `-G` is set:
 
 The following example shows PARALUS output from a PAR-CLIP experiment with CPSF1 (Cleavage and Polyadenylation Specificity Factor 1), using publicly available data (SRR13313335; Anastasakis et al., *Nucleic Acids Research* 2021, PMID: 33503264). CPSF1 is a component of the cleavage and polyadenylation complex known to recognize the canonical AAUAAA polyadenylation signal sequence on precursor messenger RNA (pre-mRNA). The predominant binding at 3'UTRs is consistent with its known function, and the enrichment of AATAAA (the DNA equivalent of AAUAAA) is clearly visible in the 5-mer scatter plot.
 
+**Terminal output** - summary printed at the end of the CPSF1 run (`paralus_1.8.7.sh`, STAR, `-p 4`):
+
+```
+PARALUS finished successfully
+  Binding sites (clusters): 1241
+  Run time: 2m 28s
+  Results in: /path/to/CPSF1_fromGEO_SRR13313335
+```
+
 **5-mer enrichment scatter plot** - each of the 1024 pentamers is plotted by its count in bound sequences (y-axis) vs. background sequences (x-axis). Pentamers enriched at binding sites fall above the diagonal; depleted ones fall below. The AATAAA polyadenylation signal is represented among the top enriched 5-mers.
 
 ![5-mer enrichment](images/FH-CPSF1_fPARCLIP_0.5Uul_RNaseI_5mer_enrichment.png)
@@ -325,9 +329,10 @@ The following example shows PARALUS output from a PAR-CLIP experiment with CPSF1
 
 ```
 PARALUS/
-├── paralus_1.8.5.sh         # Main pipeline script (includes Trierarch)
+├── paralus_1.8.7.sh         # Main pipeline script (includes Trierarch)
 ├── INSTALLATION.md          # Detailed dependencies installation instructions for all environments
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
+├── images/                  # Example output plots (CPSF1) shown in this README
 └── README.md
 ```
 
