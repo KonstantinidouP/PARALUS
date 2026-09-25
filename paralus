@@ -1,0 +1,23 @@
+#!/bin/bash
+# PARALUS launcher
+# Runs the paralus_*.sh script in this folder, so PARALUS can be called as
+# "paralus" from any folder once this folder is on your PATH (see INSTALLATION.md).
+# If there's more than one version in this folder, the newest one is used.
+
+src="${BASH_SOURCE[0]}"
+while [ -L "${src}" ]; do                       # follow symlinks to the real folder
+    target=$(readlink "${src}")
+    case "${target}" in /*) src="${target}" ;; *) src="$(dirname "${src}")/${target}" ;; esac
+done
+dir="$(cd "$(dirname "${src}")" && pwd)"
+
+script=$(ls "${dir}"/paralus_*.sh 2>/dev/null \
+    | awk -F'paralus_' '{print $NF"\t"$0}' \
+    | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -f2)
+
+if [ -z "${script}" ]; then
+    echo "error: no paralus_*.sh script found in ${dir}"
+    exit 1
+fi
+
+exec bash "${script}" "$@"
