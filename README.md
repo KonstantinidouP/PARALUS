@@ -83,17 +83,22 @@ source ~/.bashrc
 
 On a Mac, use `~/.zshrc` instead of `~/.bashrc`.
 
+Check that it worked:
+
+```bash
+paralus --help
+```
+
 Then install the dependencies into a conda environment called `paralus`. The installer checks which tools you already have and asks before installing anything:
 
 ```bash
 bash install_dependencies.sh
 ```
 
-Activate the environment before each run, and check that PARALUS works:
+Activate the environment before each run:
 
 ```bash
 conda activate paralus
-paralus --help
 ```
 
 For manual installation, HPC clusters and other details, see [INSTALLATION.md](INSTALLATION.md).
@@ -154,7 +159,10 @@ STAR --runMode genomeGenerate \
 
 Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed FASTA file with the `-f` flag.
 
-**Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM).** Build a HISAT2 index instead - it needs ~8 GB RAM to build, ~5 GB RAM to align and ~4.5 GB of disk for hg38:
+<details>
+<summary><b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
+
+Instead of the STAR index above, you can build a HISAT2 index. It needs ~8 GB RAM to build, ~5 GB RAM to align and ~4.5 GB of disk for hg38:
 
 ```bash
 mkdir -p /path/to/genome_index
@@ -162,6 +170,8 @@ hisat2-build /path/to/hg38.fa /path/to/genome_index/genome
 ```
 
 Pass the resulting index basename (`/path/to/genome_index/genome`, not a directory) to PARALUS with `-x`, together with the `-H` flag to switch PARALUS to HISAT2 mode. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2.
+
+</details>
 
 ### Step 3b - Download rRNA sequences and build an rRNA index (OPTIONAL - run once per genome)
 
@@ -199,7 +209,10 @@ STAR --runMode genomeGenerate \
 
 > **Note:** The `--genomeSAindexNbases 6` flag is required for small genomes - refer to the STAR manual for details. Pass the rRNA index folder to PARALUS with the `-e` flag.
 
-**Low-RAM option with HISAT2.** Build the rRNA index the same way as the main genome index above:
+<details>
+<summary><b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
+
+Instead of the STAR rRNA index above, you can build a HISAT2 one:
 
 ```bash
 mkdir -p /path/to/rRNA_index
@@ -207,6 +220,8 @@ hisat2-build rRNA.fa /path/to/rRNA_index/rRNA
 ```
 
 Pass the resulting basename (`/path/to/rRNA_index/rRNA`) to PARALUS with `-e`.
+
+</details>
 
 ### Step 4 - Run PARALUS
 
