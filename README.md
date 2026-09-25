@@ -35,7 +35,7 @@ PARALUS includes **Trierarch**, a companion annotation module that generates a c
 
 PARALUS is designed to be fast, self-contained, and accessible - running on any Linux or Mac machine with a single command. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine with STAR.
 
-**Low-RAM option.** On machines with limited RAM (less than 32 GB), use the `-H` flag to align with HISAT2 instead of STAR. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 and building a HISAT2 index, and the `-H` entry in `./paralus_1.8.7.sh --help` for details. HISAT2 needs far less memory and recovers the same biological signal: on CPSF1, both aligners showed the 3'UTR binding spike and enrichment of the AATAAA polyadenylation signal. HISAT2 reports fewer clusters (845 vs. 1,241 with STAR), so STAR is recommended when memory allows and maximum sensitivity matters.
+**Low-RAM option.** On machines with limited RAM (less than 32 GB), use the `-H` flag to align with HISAT2 instead of STAR. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 and building a HISAT2 index, and the `-H` entry in `paralus --help` for details. HISAT2 needs far less memory and recovers the same biological signal: on CPSF1, both aligners showed the 3'UTR binding spike and enrichment of the AATAAA polyadenylation signal. HISAT2 reports fewer clusters (845 vs. 1,241 with STAR), so STAR is recommended when memory allows and maximum sensitivity matters.
 
 PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an Apple MacBook Pro (M4 Pro, 48 GB RAM) using 4 threads (`-p 4`):
 
@@ -69,23 +69,34 @@ For step-by-step installation instructions across different environments (Apple 
 
 ## Quick Start
 
-### Step 1 - Clone the repository and activate the environment
+### Step 1 - Install PARALUS and its dependencies
 
-Clone the repository to any location on your machine - PARALUS is a bash script and does not need to be installed in the conda environment:
+Clone the repository to any location on your machine, then add the PARALUS folder to your `PATH` (the list of folders your terminal searches for programs), so you can run PARALUS as `paralus` from any folder. The last three lines add two lines to your shell settings file, a label and the `PATH` setting. Run them from inside the PARALUS folder:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-chmod +x paralus_1.8.7.sh
+echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.bashrc
+echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-To view all available options:
+On a Mac, use `~/.zshrc` instead of `~/.bashrc`.
+
+Then install the dependencies into a conda environment called `paralus`. The installer checks which tools you already have and asks before installing anything:
 
 ```bash
-./paralus_1.8.7.sh --help
+bash install_dependencies.sh
 ```
 
-Before running PARALUS, make sure all dependencies are available in your environment. See [INSTALLATION.md](INSTALLATION.md) for details on how to install and activate the dependencies for different systems.
+Activate the environment before each run, and check that PARALUS works:
+
+```bash
+conda activate paralus
+paralus --help
+```
+
+For manual installation, HPC clusters and other details, see [INSTALLATION.md](INSTALLATION.md).
 
 ### Step 2 - Build the annotation file (run once per genome)
 
@@ -94,7 +105,7 @@ Trierarch requires a gene annotation GTF file and optionally a tRNA BED file and
 We recommend downloading the latest comprehensive gene annotation GTF for your organism from **GENCODE** (https://www.gencodegenes.org) or **Ensembl** (https://www.ensembl.org), and optionally the tRNA annotation BED file from the **Genomic tRNA Database (GtRNAdb)** (https://gtrnadb.ucsc.edu) and/or the miRNA annotation GFF3 from **miRBase** (https://www.mirbase.org/download/). Download links and instructions for various organisms can be found in the PARALUS help page. Run the following command to view:
 
 ```bash
-bash paralus_1.8.7.sh --trierarch --help
+paralus --trierarch --help
 ```
 
 #### Build the annotation BED file with Trierarch
@@ -102,7 +113,7 @@ bash paralus_1.8.7.sh --trierarch --help
 Trierarch is built into PARALUS and produces the annotation BED file from the GTF. Using canonical transcripts only (the `-C` option) is recommended for cleaner annotation:
 
 ```bash
-bash paralus_1.8.7.sh --trierarch \
+paralus --trierarch \
   -G gencode.v49.annotation.gtf \
   -T hg38-tRNAs.bed \
   -C \
@@ -204,7 +215,7 @@ Make sure all dependencies are loaded or activated before running. See [INSTALLA
 **Option A - using a pre-built annotation BED file:**
 
 ```bash
-bash paralus_1.8.7.sh \
+paralus \
   -i /path/to/sample.fastq.gz \
   -x /path/to/genome_index \
   -A /path/to/annotation_Paralus.bed \
@@ -218,7 +229,7 @@ bash paralus_1.8.7.sh \
 **Option B - using a GTF directly (Trierarch runs automatically):**
 
 ```bash
-bash paralus_1.8.7.sh \
+paralus \
   -i /path/to/sample.fastq.gz \
   -x /path/to/genome_index \
   -G /path/to/gencode.gtf \
@@ -330,6 +341,8 @@ PARALUS finished successfully
 ```
 PARALUS/
 ├── paralus_1.8.7.sh         # Main pipeline script (includes Trierarch)
+├── paralus                  # Launcher: runs the pipeline script as `paralus`
+├── install_dependencies.sh  # Dependency installer (Linux and Apple Silicon Mac)
 ├── INSTALLATION.md          # Detailed dependencies installation instructions for all environments
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
 ├── images/                  # Example output plots (CPSF1) shown in this README
