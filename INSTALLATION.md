@@ -1,6 +1,6 @@
 # PARALUS - Installation Guide
 
-This guide explains how to install PARALUS and its dependencies. The quickest way is the installer, which checks your system and installs everything that's needed. The manual steps for each system follow below. For a quick start, see the main [README.md](README.md).
+This guide explains how to install PARALUS and its dependencies. The quickest way is the installer (`install_dependencies.sh`), which checks your system and installs everything that's needed. The manual steps for each system follow below. For a quick start, see the main [README.md](README.md).
 
 ## Contents
 
@@ -35,7 +35,7 @@ From inside the PARALUS folder, run:
 bash install_dependencies.sh
 ```
 
-The installer (`install_dependencies.sh`) works on Linux and Apple Silicon Macs. It checks which tools you already have and asks before installing anything. It then creates a conda environment called `paralus` with all PARALUS dependencies, installing Miniconda first if you don't have conda. On a Mac, it offers to reuse STAR if you've already compiled it, or compiles it for you. On computers with less than 32 GB RAM, it suggests HISAT2 instead of STAR.
+The installer above works on Linux and Apple Silicon Macs. It checks which tools you already have and asks before installing anything. It then creates a conda environment called `paralus` with all PARALUS dependencies, installing Miniconda first if you don't have conda. On a Mac, it offers to reuse STAR if you've already compiled it, or compiles it for you. On computers with less than 32 GB RAM, it suggests HISAT2 instead of STAR.
 
 Useful options:
 - `--dry-run` shows what the installer would do, without installing anything
