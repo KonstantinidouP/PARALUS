@@ -126,6 +126,12 @@ echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+Check that it worked:
+
+```bash
+paralus --help
+```
+
 #### 5. Before each run
 
 If you installed the dependencies in a conda environment (steps 1-2), activate it before each run:
@@ -215,6 +221,12 @@ echo "export PATH=\"$PWD:\$PATH\"" >> ~/.zshrc
 source ~/.zshrc
 ```
 
+Check that it worked:
+
+```bash
+paralus --help
+```
+
 #### 5. Before each run
 
 If you installed the dependencies in a conda environment (steps 1-2), activate it before each run:
@@ -253,6 +265,12 @@ cd PARALUS
 echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.bashrc
 echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
 source ~/.bashrc
+```
+
+Check that it worked:
+
+```bash
+paralus --help
 ```
 
 #### 3. Before each run
