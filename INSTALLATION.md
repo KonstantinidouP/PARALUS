@@ -74,7 +74,7 @@ HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS w
 
 ### 4. Install PARALUS
 
-Clone the repository to any location on your machine. PARALUS is a bash script and does not need to be installed in the conda environment. The script name includes the version number, which may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
+Clone the repository to any location on your machine. PARALUS is a bash script and does not need to be installed in the conda environment. The version number may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
@@ -114,13 +114,17 @@ conda create -n rnaseq -c bioconda -c conda-forge \
     samtools bedtools cutadapt python matplotlib numpy
 ```
 
-> **Note:** The command above doesn't pin versions, so conda picks the latest compatible ones. You can pin a specific version if you need one (e.g. `samtools=1.17`), but if that version isn't available for ARM64, conda will stop with a `PackagesNotFoundError`. Keep both `-c bioconda` and `-c conda-forge` - with bioconda alone, some packages may fail to resolve on Apple Silicon.
+> **Note:** The command above doesn't pin versions, so conda picks the latest compatible ones. You can pin a specific version if you need one (e.g. `samtools=1.17`), but if that version isn't available for ARM64, conda will stop with a `PackagesNotFoundError`.
 
 ### 3. Install STAR (compile from source)
 
 STAR has no pre-compiled binary for Apple Silicon, so it needs to be compiled. The commands below compile STAR 2.7.11b, the version PARALUS was tested with. To use a newer release, replace `2.7.11b` with its version number (see https://github.com/alexdobin/STAR/releases). If you change STAR versions, you may need to rebuild your genome index.
 
-**a. Install Homebrew and GNU gcc.** Install Homebrew from https://brew.sh if you don't have it, then:
+**a. Install Homebrew and GNU gcc.**
+
+Install Homebrew from https://brew.sh (required to install gcc). Skip this if `brew --version` already works.
+
+Then install GNU gcc:
 
 ```bash
 brew install gcc
@@ -158,7 +162,7 @@ HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS w
 
 ### 4. Install PARALUS
 
-Clone the repository to any location on your Mac. PARALUS is a bash script and does not need to be installed in the conda environment. The script name includes the version number, which may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
+Clone the repository to any location on your Mac. PARALUS is a bash script and does not need to be installed in the conda environment. The version number may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
@@ -197,7 +201,7 @@ To use HISAT2 instead of STAR (`-H`), load `hisat2` in place of the `star` modul
 
 ### 2. Install PARALUS
 
-Clone the repository to your home or project directory. The script name includes the version number, which may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
+Clone the repository to your home or project directory. The version number may be newer than the one shown here (`paralus_1.8.7.sh`). Use the file name you find in the repository:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
