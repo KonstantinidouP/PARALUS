@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    width="810"
-   height="646.35278"
-   viewBox="0 0 810 646.35278"
+   height="624.91583"
+   viewBox="0 0 810 624.91583"
    version="1.1"
    id="svg90"
    sodipodi:docname="paralus_workflow.svg"
@@ -23,9 +23,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#505050"
      showguides="false"
-     inkscape:zoom="0.4696467"
-     inkscape:cx="327.90606"
-     inkscape:cy="269.35141"
+     inkscape:zoom="0.69972652"
+     inkscape:cx="394.43982"
+     inkscape:cy="283.68226"
      inkscape:window-width="1697"
      inkscape:window-height="998"
      inkscape:window-x="0"
@@ -34,12 +34,12 @@
      inkscape:current-layer="svg90" />
   <rect
      width="810"
-     height="646.35278"
+     height="624.91583"
      fill="#ffffff"
      id="rect1"
      x="0"
      y="0"
-     style="stroke-width:0.999996" />
+     style="stroke-width:0.999993" />
   <rect
      x="20"
      y="16.058798"
@@ -134,7 +134,7 @@
      stroke-width="3"
      id="line8" />
   <polygon
-     points="275,154 286,147 275,140 "
+     points="275,140 275,154 286,147 "
      fill="#9aa5ab"
      id="polygon8"
      transform="translate(0,-7.9412026)" />
@@ -315,7 +315,7 @@
      stroke-width="3"
      id="line23" />
   <polygon
-     points="545,154 556,147 545,140 "
+     points="545,140 545,154 556,147 "
      fill="#9aa5ab"
      id="polygon23"
      transform="translate(0,-7.9412026)" />
@@ -567,7 +567,7 @@
      stroke-width="3"
      id="line43" />
   <polygon
-     points="275,436 275,450 286,443 "
+     points="286,443 275,436 275,450 "
      fill="#9aa5ab"
      id="polygon43"
      transform="translate(0,-35.941203)" />
@@ -727,7 +727,7 @@
      stroke-width="3"
      id="line53" />
   <polygon
-     points="545,436 545,450 556,443 "
+     points="556,443 545,436 545,450 "
      fill="#9aa5ab"
      id="polygon53"
      transform="translate(0,-35.941203)" />
@@ -1025,15 +1025,15 @@
      id="polyline88"
      transform="translate(0,-33.941203)" />
   <polygon
-     points="135,318 128,307 142,307 "
+     points="142,307 135,318 128,307 "
      fill="#9aa5ab"
      id="polygon88"
      transform="translate(0,-33.941203)" />
   <rect
      x="185"
-     y="570.05878"
+     y="560.0575"
      width="440"
-     height="68"
+     height="51.7206"
      rx="14"
      fill="#e8f4f2"
      stroke="#2a9d8f"
@@ -1042,7 +1042,7 @@
      id="rect88" />
   <text
      x="405"
-     y="598.05878"
+     y="580.05878"
      font-family="Helvetica, Arial, 'DejaVu Sans', sans-serif"
      font-size="17px"
      font-weight="bold"
@@ -1051,7 +1051,7 @@
      id="text89">Trierarch</text>
   <text
      x="405"
-     y="622.05878"
+     y="604.05878"
      font-family="Helvetica, Arial, 'DejaVu Sans', sans-serif"
      font-size="15px"
      font-weight="normal"
@@ -1060,14 +1060,14 @@
      id="text90">Comprehensive annotation building (gene, feature, biotype)</text>
   <line
      x1="405"
-     y1="568.05878"
+     y1="559.2403"
      x2="405"
      y2="542.05878"
      stroke="#9aa5ab"
      stroke-width="3"
      id="line90" />
   <polygon
-     points="398,580 412,580 405,568 "
+     points="405,568 398,580 412,580 "
      fill="#9aa5ab"
      id="polygon90"
      transform="translate(0,-35.941203)" />
