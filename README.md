@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/data-PAR--CLIP%20%7C%20CLIP-e76f51" alt="Data">
 </p>
 
-PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites, and includes k-mer enrichment analysis to identify sequence preferences.
+PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites.
 
 ## Contents
 
@@ -52,16 +52,15 @@ PARALUS includes **Trierarch**, a companion annotation module that generates a c
 - Built-in annotation module (Trierarch); supports canonical transcripts only (`-C`), optional tRNA (`-T`) and miRNA (`-M`) databases
 - Resolution of overlapping annotations by priority-ranked feature assignment
 - Gene name, feature, biotype, read counts, and T-to-C conversion metrics per cluster
-- 5-mer enrichment analysis at binding sites vs. background, with optional PDF scatter plot output
+- Sequence (5-mer) enrichment analysis at binding sites vs. background, with optional PDF scatter plot output
 - Metagene analysis plots for UTR/CDS and intron binding distribution (optional PDF output)
 - Per-sample statistics report including binding breakdown by gene feature type
-- Full run logging to a timestamped log file
 
 ---
 
 ## Performance & Accessibility
 
-PARALUS is free and open source. A single command takes your data from raw reads to annotated binding sites, with no need to run trimming, alignment, peak calling and annotation as separate tools. It runs on both Linux and macOS, on a local machine, a server or an HPC cluster, so access to a cluster isn't required. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine with STAR.
+PARALUS is free and open source. A single command takes your data from raw reads to annotated binding sites. It runs on both Linux and macOS, on a local machine, a server or an HPC cluster, so access to a cluster isn't required. Genome alignment with STAR requires sufficient RAM to load the genome index (~30 GB for human hg38). A minimum of 32 GB RAM is therefore recommended for human or mouse genome analysis on a local machine with STAR.
 
 **Low-RAM option.** On machines with limited RAM (less than 32 GB), use the `-H` flag to align with HISAT2 instead of STAR. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2 and building a HISAT2 index, and the `-H` entry in `paralus --help` for details. HISAT2 needs far less memory and recovers the same biological signal: on CPSF1, both aligners showed the 3'UTR binding spike and enrichment of the AATAAA polyadenylation signal. HISAT2 reports fewer clusters (845 vs. 1,241 with STAR), so STAR is recommended when memory allows and maximum sensitivity matters.
 
@@ -73,7 +72,7 @@ PARALUS was benchmarked on three publicly available fPAR-CLIP datasets on an App
 | KHSRP (SRR13313340) | 559 MB | 19,992,492 | 8,878,651 | 7:06.72 (~7.1 min) | 173% |
 | U2AF1 (SRR8606876) | 1.4 GB | 54,284,359 | 10,680,775 | 14:21.47 (~14.4 min) | 147% |
 
-Runtime scales with input size and library complexity (unique reads remaining after collapsing duplicates), ranging from ~2.5 minutes for a 238 MB dataset to ~14.4 minutes for a 1.4 GB dataset. CPU utilization of 113-173% shows that part of the run uses multiple cores. All analyses completed on a local Mac laptop without requiring access to an HPC cluster.
+Runtime scales with input size and library complexity (unique reads after collapsing duplicates). CPU utilization of 113-173% shows that part of the run uses multiple cores.
 
 > **Note:** Alignment and sorting steps benefit from additional threads (set with `-p`), but some steps such as peak calling and 5-mer counting are inherently serial. On local machines, disk speed and available RAM can be as important as CPU core count. Running PARALUS on a Linux server can be beneficial when analyzing large datasets or batch processing multiple samples.
 
@@ -83,7 +82,7 @@ Runtime scales with input size and library complexity (unique reads remaining af
 
 PARALUS requires the following tools installed in your environment:
 
-- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.11b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (alternative aligner, selected with `-H` - recommended if you have less than 32 GB RAM)
+- [STAR](https://github.com/alexdobin/STAR) (tested with v2.7.11b) **or** [HISAT2](http://daehwankimlab.github.io/hisat2/) (`-H`, low-RAM option)
 - [samtools](http://www.htslib.org/) (tested with v1.22.1)
 - [bedtools](https://bedtools.readthedocs.io/) (tested with v2.31.1)
 - [cutadapt](https://cutadapt.readthedocs.io/)
@@ -99,7 +98,7 @@ For step-by-step installation instructions across different environments (Apple 
 
 ### Step 1 - Install PARALUS and its dependencies
 
-Clone the repository to any location on your machine, then add the PARALUS folder to your `PATH` (the list of folders your terminal searches for programs), so you can run PARALUS as `paralus` from any folder. The last three lines add two lines to your shell settings file, a label and the `PATH` setting. Run them from inside the PARALUS folder:
+Clone the repository and add it to your `PATH` (the list of folders your terminal searches for programs):
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
@@ -117,7 +116,7 @@ Check that it worked:
 paralus --help
 ```
 
-Then install the dependencies into a conda environment called `paralus`. The installer checks which tools you already have and asks before installing anything:
+Then install the dependencies into a conda environment called `paralus`. The installer (`install_dependencies.sh`) checks which tools you already have and asks before installing anything:
 
 ```bash
 bash install_dependencies.sh
@@ -139,7 +138,7 @@ PARALUS needs:
 - a gene annotation: a GTF (`-G`) or a BED file built with Trierarch (`-A`)
 - optionally, an rRNA index for rRNA depletion (`-e`)
 
-If you don't have them yet, see [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for downloading the relevant files and building the indexes, including HISAT2 indexes for the low-RAM option.
+If you don't have them yet, see [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for downloading the relevant files and building the indexes.
 
 ### Step 3 - Run PARALUS
 
