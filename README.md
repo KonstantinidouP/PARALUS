@@ -1,11 +1,13 @@
-# PARALUS
+<h1 align="center">PARALUS</h1>
 
-[![Latest release](https://img.shields.io/github/v/release/KonstantinidouP/PARALUS?color=2a9d8f)](https://github.com/KonstantinidouP/PARALUS/releases/latest)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-9aa5ab)
-![Shell](https://img.shields.io/badge/shell-bash-9aa5ab)
-![Data](https://img.shields.io/badge/data-PAR--CLIP%20%7C%20CLIP-e76f51)
+<p align="center"><b>A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis</b></p>
 
-> **A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis**
+<p align="center">
+  <a href="https://github.com/KonstantinidouP/PARALUS/releases/latest"><img src="https://img.shields.io/github/v/release/KonstantinidouP/PARALUS?color=2a9d8f" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-blue" alt="Platform">
+  <img src="https://img.shields.io/badge/shell-bash-green" alt="Shell">
+  <img src="https://img.shields.io/badge/data-PAR--CLIP%20%7C%20CLIP-e76f51" alt="Data">
+</p>
 
 PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites, and includes k-mer enrichment analysis to identify sequence preferences.
 
