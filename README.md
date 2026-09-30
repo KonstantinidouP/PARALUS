@@ -1,5 +1,10 @@
 # PARALUS
 
+[![Latest release](https://img.shields.io/github/v/release/KonstantinidouP/PARALUS?color=2a9d8f)](https://github.com/KonstantinidouP/PARALUS/releases/latest)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-9aa5ab)
+![Shell](https://img.shields.io/badge/shell-bash-9aa5ab)
+![Data](https://img.shields.io/badge/data-PAR--CLIP%20%7C%20CLIP-e76f51)
+
 > **A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis**
 
 PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites, and includes k-mer enrichment analysis to identify sequence preferences.
