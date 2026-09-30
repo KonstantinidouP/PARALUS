@@ -109,7 +109,7 @@ echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-On a Mac, use `~/.zshrc` instead of `~/.bashrc`.
+❗ **On a Mac, use `~/.zshrc` instead of `~/.bashrc`.**
 
 Check that it worked:
 
