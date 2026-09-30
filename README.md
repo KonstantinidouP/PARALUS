@@ -12,6 +12,10 @@ PARALUS takes CLIP or PAR-CLIP sequencing data as input and outputs RBP binding 
 
 PARALUS includes **Trierarch**, a companion annotation module that generates a custom annotation BED file directly from a Gencode/Ensembl GTF file. Trierarch is embedded in the same script and can be run standalone using the `--trierarch` mode, or triggered within a PARALUS run by providing a GTF file with the `-G` flag.
 
+<p align="center">
+  <img src="images/paralus_workflow.svg" width="800" alt="PARALUS workflow: input, preprocessing, alignment, crosslink sites, cluster calling and outputs, with Trierarch annotation">
+</p>
+
 ---
 
 ## Features
@@ -125,7 +129,7 @@ paralus --trierarch \
   -O gencode.v49.annotation_Trierarch_canonical
 ```
 
-This produces `gencode.v49.annotation_Trierarch_canonical_Paralus.bed` to use with PARALUS via the `-A` flag. Alternatively, use `-G` directly in your PARALUS run and Trierarch will build the annotation automatically.
+This produces `gencode.v49.annotation_Trierarch_canonical_Paralus.bed` to use with PARALUS via the `-A` flag. Alternatively, use `-G` directly in your PARALUS run and Trierarch builds the annotation before alignment.
 
 ### Step 3 - Download the reference genome and build a STAR index (run once per genome)
 
@@ -241,7 +245,7 @@ paralus \
   -p 12
 ```
 
-**Option B - using a GTF directly (Trierarch runs automatically):**
+**Option B - using a GTF directly (Trierarch builds the annotation first):**
 
 ```bash
 paralus \
@@ -360,7 +364,7 @@ PARALUS/
 ├── install_dependencies.sh  # Dependency installer (Linux and Apple Silicon Mac)
 ├── INSTALLATION.md          # Detailed dependencies installation instructions for all environments
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
-├── images/                  # Example output plots (CPSF1) shown in this README
+├── images/                  # Workflow figure and example output plots (CPSF1) shown in this README
 └── README.md
 ```
 
