@@ -50,10 +50,10 @@ PARALUS includes **Trierarch**, a companion annotation module that generates a c
 - T-to-C crosslink site extraction from PAR-CLIP data at single-nucleotide resolution
 - Two-stage peak calling based on read distribution modeling that filters out artifacts and background
 - Built-in annotation module (Trierarch); supports canonical transcripts only (`-C`), optional tRNA (`-T`) and miRNA (`-M`) databases
-- Resolution of overlapping annotations by priority-ranked feature assignment
+- Resolution of overlapping annotations based on a predefined feature priority
 - Gene name, feature, biotype, read counts, and T-to-C conversion metrics per cluster
-- Sequence (5-mer) enrichment analysis at binding sites vs. background, with optional PDF scatter plot output
-- Metagene analysis plots for UTR/CDS and intron binding distribution (optional PDF output)
+- Sequence (5-mer) enrichment analysis at binding sites vs. background (optional PDF output)
+- Metagene analysis showing binding distribution across transcript regions and introns (optional PDF output)
 - Per-sample statistics report including binding breakdown by gene feature type
 
 ---
@@ -98,7 +98,7 @@ For step-by-step installation instructions across different environments (Apple 
 
 ### Step 1 - Install PARALUS and its dependencies
 
-Clone the repository and add it to your `PATH` (the list of folders your terminal searches for programs):
+Clone the repository and add it to your `PATH`:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
@@ -251,7 +251,7 @@ The following flags are only relevant when `-G` is set:
 
 ## Example Output
 
-The following example shows PARALUS output from a PAR-CLIP experiment with CPSF1 (Cleavage and Polyadenylation Specificity Factor 1), using publicly available data (SRR13313335; Anastasakis et al., *Nucleic Acids Research* 2021, PMID: 33503264). CPSF1 is a component of the cleavage and polyadenylation complex known to recognize the canonical AAUAAA polyadenylation signal sequence on precursor messenger RNA (pre-mRNA). The predominant binding at 3'UTRs is consistent with its known function, and the enrichment of AATAAA (the DNA equivalent of AAUAAA) is clearly visible in the 5-mer scatter plot.
+The following example shows PARALUS output from a PAR-CLIP experiment with CPSF1 (Cleavage and Polyadenylation Specificity Factor 1), using publicly available data (SRR13313335; Anastasakis et al., *Nucleic Acids Research* 2021, PMID: 33503264). CPSF1 is known to recognize the canonical AAUAAA polyadenylation signal sequence on precursor messenger RNA (pre-mRNA).
 
 **Terminal output** - summary printed at the end of the CPSF1 run (`paralus_1.8.7.sh`, STAR, `-p 4`):
 
@@ -262,11 +262,11 @@ PARALUS finished successfully
   Results in: /path/to/CPSF1_fromGEO_SRR13313335
 ```
 
-**5-mer enrichment scatter plot** - each of the 1024 pentamers is plotted by its count in bound sequences (y-axis) vs. background sequences (x-axis). Pentamers enriched at binding sites fall above the diagonal; depleted ones fall below. The AATAAA polyadenylation signal is represented among the top enriched 5-mers.
+**5-mer enrichment scatter plot** - each of the 1024 pentamers is plotted by its count in bound sequences (y-axis) vs. background sequences (x-axis). The polyadenylation signal (DNA equivalent: AATAAA) is represented among the top enriched 5-mers.
 
 ![5-mer enrichment](images/FH-CPSF1_fPARCLIP_0.5Uul_RNaseI_5mer_enrichment.png)
 
-**Metagene plot** - distribution of T-to-C crosslink sites across the 5'UTR, CDS, and 3'UTR of protein-coding genes, normalized by region length. A distinct spike at the 3' end of the 3'UTR reflects CPSF1's binding at the cleavage and polyadenylation site.
+**Metagene plot** - distribution of T-to-C crosslink sites across transcript regions of protein-coding genes, normalized by region length. A distinct spike at the 3' end of the 3'UTR reflects CPSF1's binding at the cleavage and polyadenylation site.
 
 ![Metagene UTR/CDS](images/FH-CPSF1_fPARCLIP_0.5Uul_RNaseI_ttoc_utr_cds.png)
 
