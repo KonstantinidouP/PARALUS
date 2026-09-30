@@ -1,8 +1,9 @@
-<h1 align="center">PARALUS</h1>
+<h1 align="center">
+  PARALUS<br>
+  <sub>A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis</sub>
+</h1>
 
-<p align="center"><b>A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis</b></p>
-
-<p align="center">
+<p>
   <a href="https://github.com/KonstantinidouP/PARALUS/releases/latest"><img src="https://img.shields.io/github/v/release/KonstantinidouP/PARALUS?color=2a9d8f" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-blue" alt="Platform">
   <img src="https://img.shields.io/badge/shell-bash-green" alt="Shell">
