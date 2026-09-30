@@ -12,6 +12,19 @@
 
 PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites, and includes k-mer enrichment analysis to identify sequence preferences.
 
+## Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Performance & Accessibility](#performance--accessibility)
+- [Dependencies](#dependencies)
+- [Quick Start](#quick-start)
+- [Parameters](#parameters)
+- [Output files](#output-files)
+- [Example Output](#example-output)
+
+Other guides: [INSTALLATION.md](INSTALLATION.md) | [REFERENCE_SETUP.md](REFERENCE_SETUP.md)
+
 ---
 
 ## Overview
@@ -28,18 +41,21 @@ PARALUS includes **Trierarch**, a companion annotation module that generates a c
 
 ## Features
 
+- Analyzes both PAR-CLIP and CLIP data (CLIP mode with `-c 0 -r 0`)
+- Runs on Linux and macOS
 - Handles multiple input formats: FASTQ, FASTQ.gz, and FASTA
 - Optional UMI trimming and adapter removal via cutadapt
 - Optional rRNA depletion by pre-mapping to an rRNA genome index
+- Genome alignment with STAR, or with HISAT2 (`-H`, low-RAM machines option)
 - T-to-C crosslink site extraction from PAR-CLIP data at single-nucleotide resolution
 - Two-stage peak calling based on read distribution modeling that filters out artifacts and background
-- Gene name, feature, biotype, read counts, and T-to-C conversion metrics per cluster
-- Resolution of overlapping annotations by priority-ranked feature assignment
 - Built-in annotation module (Trierarch); supports canonical transcripts only (`-C`), optional tRNA (`-T`) and miRNA (`-M`) databases
+- Resolution of overlapping annotations by priority-ranked feature assignment
+- Gene name, feature, biotype, read counts, and T-to-C conversion metrics per cluster
 - 5-mer enrichment analysis at binding sites vs. background, with optional PDF scatter plot output
 - Metagene analysis plots for UTR/CDS and intron binding distribution (optional PDF output)
-- Full run logging to a timestamped log file
 - Per-sample statistics report including binding breakdown by gene feature type
+- Full run logging to a timestamped log file
 
 ---
 
@@ -115,129 +131,19 @@ conda activate paralus
 
 For manual installation, HPC clusters and other details, see [INSTALLATION.md](INSTALLATION.md).
 
-### Step 2 - Build the annotation file (run once per genome)
+### Step 2 - Prepare the reference files (once per genome)
 
-Trierarch requires a gene annotation GTF file and optionally a tRNA BED file and/or a miRNA GFF3 file. The GTF can be from GENCODE or Ensembl. All reference files are freely available from public databases.
+PARALUS needs:
+- the genome FASTA (`-f`)
+- a genome index (`-x`)
+- a gene annotation: a GTF (`-G`) or a BED file built with Trierarch (`-A`)
+- optionally, an rRNA index for rRNA depletion (`-e`)
 
-We recommend downloading the latest comprehensive gene annotation GTF for your organism from **GENCODE** (https://www.gencodegenes.org) or **Ensembl** (https://www.ensembl.org), and optionally the tRNA annotation BED file from the **Genomic tRNA Database (GtRNAdb)** (https://gtrnadb.ucsc.edu) and/or the miRNA annotation GFF3 from **miRBase** (https://www.mirbase.org/download/). Download links and instructions for various organisms can be found in the PARALUS help page. Run the following command to view:
+If you don't have them yet, see [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for downloading the relevant files and building the indexes, including HISAT2 indexes for the low-RAM option.
 
-```bash
-paralus --trierarch --help
-```
+### Step 3 - Run PARALUS
 
-#### Build the annotation BED file with Trierarch
-
-Trierarch is built into PARALUS and produces the annotation BED file from the GTF. Using canonical transcripts only (the `-C` option) is recommended for cleaner annotation:
-
-```bash
-paralus --trierarch \
-  -G gencode.v49.annotation.gtf \
-  -T hg38-tRNAs.bed \
-  -C \
-  -O gencode.v49.annotation_Trierarch_canonical
-```
-
-This produces `gencode.v49.annotation_Trierarch_canonical_Paralus.bed` to use with PARALUS via the `-A` flag. Alternatively, use `-G` directly in your PARALUS run and Trierarch builds the annotation before alignment.
-
-### Step 3 - Download the reference genome and build a STAR index (run once per genome)
-
-You need the reference genome of your organism of interest in FASTA format. If you don't have it yet, download it from UCSC. These are large files (~1 GB compressed) - make sure you have enough disk space. Below is an example for the human genome (hg38).
-
-Linux:
-
-```bash
-wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
-```
-
-Mac (curl is pre-installed):
-
-```bash
-curl -o hg38.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
-```
-
-Decompress the FASTA (decompressed file will be ~3.5 GB for hg38) and build the STAR genome index. This is a one-time step per genome and requires ~30 GB of disk space and significant RAM (≥32 GB recommended):
-
-```bash
-gunzip -k hg38.fa.gz
-mkdir /path/to/genome_index
-STAR --runMode genomeGenerate \
-     --genomeDir /path/to/genome_index \
-     --genomeFastaFiles /path/to/hg38.fa \
-     --runThreadN 6 \
-     --limitGenomeGenerateRAM 38000000000
-```
-
-> **Note:** The `--limitGenomeGenerateRAM` flag caps memory usage in bytes. Adjust based on your available RAM - on a server with ≥64 GB RAM you can omit this flag entirely.
-
-Pass the genome index folder to PARALUS with the `-x` flag, and the uncompressed FASTA file with the `-f` flag.
-
-<details>
-<summary>💡 <b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
-
-Instead of the STAR index above, you can build a HISAT2 index. It needs ~8 GB RAM to build, ~5 GB RAM to align and ~4.5 GB of disk for hg38:
-
-```bash
-mkdir -p /path/to/genome_index
-hisat2-build /path/to/hg38.fa /path/to/genome_index/genome
-```
-
-Pass the resulting index basename (`/path/to/genome_index/genome`, not a directory) to PARALUS with `-x`, together with the `-H` flag to switch PARALUS to HISAT2 mode. See [INSTALLATION.md](INSTALLATION.md) for installing HISAT2.
-
-</details>
-
-### Step 3b - Download rRNA sequences and build an rRNA index (OPTIONAL - run once per genome)
-
-This step is only needed if you want to use the rRNA depletion option in PARALUS (the `-e` flag). It removes rRNA-mapping reads before genome alignment, which can significantly improve the signal-to-noise ratio in your data.
-
-Download the human rRNA sequences:
-
-Linux:
-
-```bash
-wget -O U13369.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/U13369.1?download=true"
-wget -O X12811.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/X12811.1?download=true"
-```
-
-Mac:
-
-```bash
-curl -o U13369.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/U13369.1?download=true"
-curl -o X12811.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/X12811.1?download=true"
-```
-
-Alternatively, both sequences can be downloaded manually from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide) - search for accessions `U13369.1` (45S rDNA repeat unit) and `X12811.1` (5S rRNA), download each as FASTA.
-
-Then concatenate the two files and build a STAR index:
-
-```bash
-cat U13369.1.fasta X12811.1.fasta > rRNA.fa
-mkdir /path/to/rRNA_index
-STAR --runMode genomeGenerate \
-     --genomeDir /path/to/rRNA_index \
-     --genomeFastaFiles rRNA.fa \
-     --runThreadN 6 \
-     --genomeSAindexNbases 6
-```
-
-> **Note:** The `--genomeSAindexNbases 6` flag is required for small genomes - refer to the STAR manual for details. Pass the rRNA index folder to PARALUS with the `-e` flag.
-
-<details>
-<summary>💡 <b>Low-RAM option with HISAT2 (for local machines with less than 32 GB RAM)</b></summary>
-
-Instead of the STAR rRNA index above, you can build a HISAT2 one:
-
-```bash
-mkdir -p /path/to/rRNA_index
-hisat2-build rRNA.fa /path/to/rRNA_index/rRNA
-```
-
-Pass the resulting basename (`/path/to/rRNA_index/rRNA`) to PARALUS with `-e`.
-
-</details>
-
-### Step 4 - Run PARALUS
-
-Make sure all dependencies are loaded or activated before running. See [INSTALLATION.md](INSTALLATION.md) for instructions tailored to your system.
+Make sure you have activated the `paralus` environment (`conda activate paralus`), or loaded the modules if you're on an HPC cluster. If you haven't installed the dependencies yet, see [Step 1](#step-1---install-paralus-and-its-dependencies).
 
 **Option A - using a pre-built annotation BED file:**
 
@@ -251,6 +157,8 @@ paralus \
   -a NNTGACTGTGGAATTCTCGGGTGCCAAGG \
   -u 4 \
   -p 12
+
+# -e (rRNA depletion) is optional
 ```
 
 **Option B - using a GTF directly (Trierarch builds the annotation first):**
@@ -267,6 +175,8 @@ paralus \
   -a NNTGACTGTGGAATTCTCGGGTGCCAAGG \
   -u 4 \
   -p 12
+
+# -e (rRNA depletion) is optional
 ```
 
 
@@ -371,6 +281,7 @@ PARALUS/
 ├── paralus                  # Launcher: runs the pipeline script as `paralus`
 ├── install_dependencies.sh  # Dependency installer (Linux and Apple Silicon Mac)
 ├── INSTALLATION.md          # Detailed dependencies installation instructions for all environments
+├── REFERENCE_SETUP.md       # Reference genome, annotation and rRNA index setup
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
 ├── images/                  # Workflow figure and example output plots (CPSF1) shown in this README
 └── README.md

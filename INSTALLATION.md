@@ -118,7 +118,7 @@ conda install -n paralus -c bioconda -c conda-forge hisat2
 hisat2 --version
 ```
 
-HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS with the `-H` flag, and pass `-x`/`-e` the HISAT2 index basename (e.g. `/path/to/genome_index/genome`, not the folder). See [README.md](README.md) for building the HISAT2 genome and rRNA indexes.
+HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS with the `-H` flag, and pass `-x`/`-e` the HISAT2 index basename (e.g. `/path/to/genome_index/genome`, not the folder). See [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for building the HISAT2 genome and rRNA indexes.
 
 #### 4. Install PARALUS
 
@@ -213,7 +213,7 @@ conda install -n paralus -c bioconda -c conda-forge hisat2
 hisat2 --version
 ```
 
-HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS with the `-H` flag, and pass `-x`/`-e` the HISAT2 index basename (e.g. `/path/to/genome_index/genome`, not the folder). See [README.md](README.md) for building the HISAT2 genome and rRNA indexes.
+HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS with the `-H` flag, and pass `-x`/`-e` the HISAT2 index basename (e.g. `/path/to/genome_index/genome`, not the folder). See [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for building the HISAT2 genome and rRNA indexes.
 
 #### 4. Install PARALUS
 
