@@ -144,7 +144,7 @@ If you don't have them yet, see [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for dow
 
 Make sure you have activated the `paralus` environment (`conda activate paralus`), or loaded the modules if you're on an HPC cluster. If you haven't installed the dependencies yet, see [Step 1](#step-1---install-paralus-and-its-dependencies).
 
-**Option A - using a pre-built annotation BED file:**
+**Option A - if you've already built the annotation with Trierarch (pass it with `-A`):**
 
 ```bash
 paralus \
@@ -160,7 +160,7 @@ paralus \
 # -e (rRNA depletion) is optional
 ```
 
-**Option B - using a GTF directly (Trierarch builds the annotation first):**
+**Option B - if you haven't built it yet (PARALUS runs Trierarch to build the annotation first, pass the GTF with `-G`):**
 
 ```bash
 paralus \
@@ -178,6 +178,7 @@ paralus \
 # -e (rRNA depletion) is optional
 ```
 
+To build the annotation with Trierarch before running PARALUS (Option A), see [REFERENCE_SETUP.md](REFERENCE_SETUP.md#2-gene-annotation).
 
 ---
 
