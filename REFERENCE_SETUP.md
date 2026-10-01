@@ -18,7 +18,7 @@ You need the reference genome of your organism of interest in FASTA format. If y
 curl -O https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
 ```
 
-`curl` is preinstalled on macOS and most Linux systems. If yours doesn't have it, use `wget` with the same link instead.
+> **Note:** `curl` is preinstalled on macOS and most Linux systems. If yours doesn't have it, use `wget` with the same link instead.
 
 Decompress the FASTA (decompressed file will be ~3.5 GB for hg38) and build the STAR genome index. This is a one-time step per genome and requires ~30 GB of disk space and significant RAM (≥32 GB recommended):
 
@@ -89,7 +89,7 @@ curl -o U13369.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/U13369.1?dow
 curl -o X12811.1.fasta "https://www.ebi.ac.uk/ena/browser/api/fasta/X12811.1?download=true"
 ```
 
-If you don't have `curl`, use `wget -O U13369.1.fasta "<link>"` instead (capital `-O` in wget).
+> **Note:** If you don't have `curl`, use `wget -O U13369.1.fasta "<link>"` instead (capital `-O` in wget).
 
 Alternatively, both sequences can be downloaded manually from the **NCBI Nucleotide database** (https://www.ncbi.nlm.nih.gov/nucleotide) - search for accessions `U13369.1` (45S rDNA repeat unit) and `X12811.1` (5S rRNA), download each as FASTA.
 
