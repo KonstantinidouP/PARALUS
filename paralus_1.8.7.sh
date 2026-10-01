@@ -572,6 +572,10 @@
 #     failed
 #   - the -G help text no longer says the annotation is cached and reused;
 #     that cache was removed in 1.8.2, and -G rebuilds it on every run
+#   - uncompressed .fastq input now works with a 3' adapter but no UMIs, or
+#     with neither (with or without -e). Before, only adapters + UMIs were
+#     handled for .fastq, and the other cases stopped with "Could not find
+#     any combinations of options for the input"
 
 # --------------------------------------------------------------------------
 # run_trierarch: Trierarch's annotation-building logic, as a function so it
@@ -1763,6 +1767,51 @@ elif [[ "${rrna_index_ok}" -eq 1 && $ext == "gz" && ${#three_adapt} -gt 0 && $um
 
   	align_genome rRNA_depleted_"${name}"_trimmed.fasta
 		echo "done!" >> "${name}".log
+
+# v1.8.7: uncompressed fastq with adapters but no UMIs, or with neither, was
+# missing (only fastq.gz had these). Same steps as the fastq.gz branches,
+# reading the fastq directly instead of through gzip -dc
+elif [[ "${rrna_index_ok}" -eq 0 && $ext == "fastq" && ${#three_adapt} -gt 0 && $umis -eq 0 ]]
+	then
+		echo "You have a fastq file, provided adapters and did not provide UMIs and rRNA genome"
+		awk 'NR%4==2' "${name}".fastq | sort | uniq -c | sed 's/[[:space:]][[:space:]]//g' \
+		| awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
+		cutadapt -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
+		 -o "${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt
+
+  	align_genome "${name}"_trimmed.fasta
+
+elif [[ "${rrna_index_ok}" -eq 1 && $ext == "fastq" && ${#three_adapt} -gt 0 && $umis -eq 0 ]]
+	then
+		echo "You have a fastq file and adapters but no UMIs and provided a rRNA genome"
+		awk 'NR%4==2' "${name}".fastq | sort | uniq -c | sed 's/[[:space:]][[:space:]]//g' \
+		| awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
+		cutadapt -m "$minlen" -a "$three_adapt" -g "$five_adapt;min_overlap=10" \
+		-o pre_rRNA_dep_"${name}"_trimmed.fasta ${name}_collapsed.fasta >> "${name}"_stats.txt
+
+	prealign_rrna pre_rRNA_dep_"${name}"_trimmed.fasta
+
+  	align_genome rRNA_depleted_"${name}"_trimmed.fasta
+		echo "done!" >> "${name}".log
+
+elif [[ "${rrna_index_ok}" -eq 0 && $ext == "fastq" && ${#three_adapt} -eq 0 && $umis -eq 0 ]]
+	then
+		echo "You have a fastq file and did not provide UMIs, adapters and a rRNA genome"
+		awk 'NR%4==2' "${name}".fastq | sort | uniq -c | sed 's/[[:space:]][[:space:]]//g' \
+		| awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
+		echo "aligning sequences to genome" >> "${name}".log
+  	align_genome ${name}_collapsed.fasta
+		echo "done!" >> "${name}".log
+
+elif [[ "${rrna_index_ok}" -eq 1 && $ext == "fastq" && ${#three_adapt} -eq 0 && $umis -eq 0 ]]
+	then
+		echo "You have a fastq file and no UMIs and adapters and provided a rRNA genome"
+		awk 'NR%4==2' "${name}".fastq | sort | uniq -c | sed 's/[[:space:]][[:space:]]//g' \
+		| awk '{OFS= "\n"; print ">"NR"-"$1,$2}' > ${name}_collapsed.fasta
+		echo "aligning sequences to rRNA_genome" >> "${name}".log
+	prealign_rrna ${name}_collapsed.fasta
+		echo "aligning sequences to genome" >> "${name}".log
+  	align_genome rRNA_depleted_"${name}"_trimmed.fasta
 
 else
 	echo "Could not find any combinations of options for the input"
