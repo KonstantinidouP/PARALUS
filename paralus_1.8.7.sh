@@ -1,6 +1,12 @@
 #!/bin/bash
-# PARAlus is a bedtools and awk based program to analyze PAR-CLIP or CLIP data
-# created by Dimitrios Anastasakis
+# PARALUS - PAR-CLIP and CLIP sequencing data analysis
+# https://github.com/KonstantinidouP/PARALUS
+#
+# Dimitrios Anastasakis - original author and developer
+# Parthena Konstantinidou - developer and maintainer
+#
+# Released under the MIT License (see LICENSE)
+#
 # PARalus 1.5.1 this version was with addition of --outSAMmultNmax 1 --outMultimapperOrder Random 
 # PARalus 1.5.3 this version was with addition of rRNA mapper toget rRNA maping stats and also with a cluster.csv cleaner with priority in annotations as 3ss > 5ss > start_codon > stop_codon> 3utr> 5utr > CDS > exon > intron 
 # PARalus 1.6:
@@ -558,6 +564,14 @@
 #   - fixed the message for fastq.gz + rRNA genome + 3' adapter without
 #     UMIs, which said "have UMIs and adapters" although that branch only
 #     runs when no UMIs are given
+#   - help and error messages now show the command as "paralus" (the
+#     launcher) instead of "./Paralus"
+#   - input and setup errors (missing -i/-x, missing index, annotation or
+#     input file, or Trierarch not producing an annotation) now exit with
+#     status 1 instead of 0, so scripts and job schedulers see the run as
+#     failed
+#   - the -G help text no longer says the annotation is cached and reused;
+#     that cache was removed in 1.8.2, and -G rebuilds it on every run
 
 # --------------------------------------------------------------------------
 # run_trierarch: Trierarch's annotation-building logic, as a function so it
@@ -612,7 +626,7 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     cat << 'EOF'
 #####################################################
 Usage:
-  ./Paralus --trierarch -G genes.gtf [-T tRNA_DB.bed] [-M miRNA_DB.gff3] [-O output_prefix]
+  paralus --trierarch -G genes.gtf [-T tRNA_DB.bed] [-M miRNA_DB.gff3] [-O output_prefix]
 
   Required fields:
 
@@ -639,7 +653,7 @@ Usage:
 
   Output:
     <prefix>_Paralus.bed  - the 7-column bed (chr,start,end,gene,annotation,
-                             strand,biotype) ready for `Paralus -A`
+                             strand,biotype) ready for `paralus -A`
 
   Downloading tRNA_DB / miRNA_DB from the terminal:
 
@@ -1222,9 +1236,9 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
    ~ ~~    /   /   /   /   ~~   ~
    ~~     /   /   /   /  ~    ~~~
  
- Usage: ./Paralus -x genome_index_base -i input_file -A annotation.bed
-        ./Paralus -x genome_index_base -i input_file -G genes.gtf
-        ./Paralus --trierarch -G genes.gtf -C -O output_prefix    (Trierarch standalone, no Paralus run)
+ Usage: paralus -x genome_index_base -i input_file -A annotation.bed
+        paralus -x genome_index_base -i input_file -G genes.gtf
+        paralus --trierarch -G genes.gtf -C -O output_prefix    (Trierarch standalone, no Paralus run)
  
  Required fields:
   
@@ -1238,21 +1252,20 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   			hisat2-build genome.fasta /path/genome_index/genome
   			# pass -x /path/genome_index/genome
 
-  Annotation - provide EITHER -A (a ready-made bed) OR -G (a raw gtf, Trierarch
-  runs automatically - takes about a minute, cached after the first run). Or
-  run Trierarch on its own with --trierarch, e.g. to pre-build a bed once and
-  reuse it across many samples with -A - see "./Paralus --trierarch --help"
-  for Trierarch's own flags:
+  Annotation - provide EITHER -A (a ready-made bed) OR -G (a raw gtf; PARALUS
+  runs Trierarch on it at the start of every run). To build the bed once and
+  reuse it across many samples, run Trierarch on its own with --trierarch and
+  pass the result with -A - see "paralus --trierarch --help" for Trierarch's
+  own flags:
 
   -A  A 7-column bed file already produced by Trierarch. Use this if you've
       already run Trierarch yourself, or want to reuse the same annotation
       across many samples without re-checking it every time.
   -G  A raw gtf (GENCODE or Ensembl format, gene_type or gene_biotype either
-      recognised). Trierarch is run automatically to build the annotation bed
-      the first time; on later runs with the same gtf and flags below, the
-      cached *_Paralus.bed next to the gtf is reused instead of rebuilding it.
+      recognised). PARALUS runs Trierarch on it to build the annotation bed
+      on every run.
       Flags below are the same letters Trierarch uses natively (see
-      "./Paralus --trierarch --help") and are passed straight through when
+      "paralus --trierarch --help") and are passed straight through when
       -G triggers it - no translation between standalone and -G usage:
         -T  tRNA database bed6 (e.g. from GtRNAdb)
         -M  miRNA database, miRBase gff3 or bed6
@@ -1260,7 +1273,7 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
         -U  keep genes with no gene_name (fallback to gene_id)
       (uppercase M/C/U since lowercase m/c/u are already Paralus's own
       options below - Trierarch itself uses M/C/U natively for exactly
-      this reason, whether run standalone or auto-triggered via -g)
+      this reason, whether run standalone or run through -G)
 
   *Make sure you have loaded samtools bedtools and cutadapt acording to your enviroment
   
@@ -1456,7 +1469,7 @@ if [ -z "${input}" ] || [ -z "${index}" ]; then
 at least one of them wasn't given here. If you only wanted to build the
 annotation bed from a gtf, that doesn't need -i/-x at all - use Trierarch
 standalone instead:
-  ./Paralus --trierarch -G your.gtf -C -U -O output_prefix
+  paralus --trierarch -G your.gtf -C -U -O output_prefix
 See --help for the full list of required/optional flags for an actual
 Paralus run."
     else
@@ -1464,7 +1477,7 @@ Paralus run."
 -i (input reads) and -x (genome index) are both required. See --help for
 the full list of required/optional flags."
     fi
-    exit 0
+    exit 1
 fi
 
 # --------------------------------------------------------------------------
@@ -1514,7 +1527,7 @@ if [ -z "${annotation}" ] && [ -n "${raw_gtf}" ]; then
         echo "error:
 Trierarch ran but ${expected_annotation} was not produced - check the Trierarch output
 above for errors."
-        exit 0
+        exit 1
     fi
 
     annotation="${expected_annotation}"
@@ -1561,34 +1574,34 @@ fi
 if [ "${main_index_ok}" -eq 0 ]; then
 echo "error:
 $( [ "${use_hisat}" = "1" ] && echo "HISAT2 genome index not found at ${index}.1.ht2 (or .ht2l) - build one first with hisat2-build (see --help) or check the -x path" || echo "STAR genome index not found at ${index}/SAindex - build one first (see --help) or check the -x path" )"
- exit 0
+ exit 1
 
 elif [ -z "${genomefasta}" ] || [ ! -f "${genomefasta}" ]; then
 echo "error:
 please provide a genome.fa using the -f option (needed for samtools calmd and
 bedtools getfasta later in the pipeline, even if a STAR index already exists)"
- exit 0
+ exit 1
 
 elif [ ! -f "${annotation}" ]; then
 echo "error:
 please provide an annotation bed with -A, or a raw gtf with -G to have Trierarch
-build one automatically"
- exit 0
+build one"
+ exit 1
 
 elif [ "${annot_bad}" = "1" ]; then
 echo "error:
 -A does not look like a proper annotation bed file (9 tab-separated columns,
 or non-numeric start/end) - this usually means a raw .gtf was passed to -A.
-Either pass the gtf with -G instead (Trierarch then runs automatically), or
+Either pass the gtf with -G instead (PARALUS then runs Trierarch), or
 run Trierarch yourself first:
-  ./Paralus --trierarch -G your.gtf -C -O output_prefix
+  paralus --trierarch -G your.gtf -C -O output_prefix
 and pass the resulting *_Paralus.bed here with -A."
- exit 0
+ exit 1
 
 elif [ ! -f "${input}" ]; then
 echo "error:
 please provide an input file (fastqz/fastq/fasta/"
- exit 0
+ exit 1
  elif [ "${rrna_index_ok}" -eq 0 ]; then
 echo "Warning:
 rRNA_genome was not provided"
