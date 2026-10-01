@@ -179,7 +179,7 @@ paralus \
 # -e (rRNA depletion) is optional
 ```
 
-To build the annotation with Trierarch before running PARALUS (Option A), see [REFERENCE_SETUP.md](REFERENCE_SETUP.md#2-gene-annotation).
+Option B is the simplest for a first or single run, but rebuilds the annotation every time. To save time when analysing more samples from the same organism, build it once with Trierarch (see [REFERENCE_SETUP.md](REFERENCE_SETUP.md#2-gene-annotation)) and reuse it with `-A` (Option A).
 
 ---
 
