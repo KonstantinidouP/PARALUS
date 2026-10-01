@@ -576,6 +576,9 @@
 #     with neither (with or without -e). Before, only adapters + UMIs were
 #     handled for .fastq, and the other cases stopped with "Could not find
 #     any combinations of options for the input"
+#   - .fasta input without -e now aligns the input file. It used to pass
+#     <name>_trimmed.fasta to the aligner, a file that is never created for
+#     fasta input, so the run could not work
 
 # --------------------------------------------------------------------------
 # run_trierarch: Trierarch's annotation-building logic, as a function so it
@@ -1699,7 +1702,9 @@ elif [[ "${rrna_index_ok}" -eq 0 && $ext == "fastq" && ${#three_adapt} -gt 0 && 
 elif [[ "${rrna_index_ok}" -eq 0 && $ext == "fasta" && ${#three_adapt} -eq 0 && $umis -eq 0 ]]
 	then
 		echo "You have a fasta file and did not provide UMIs and adapters and a rRNA genome"
-  	align_genome "${name}"_trimmed.fasta
+	# v1.8.7: align the input fasta itself - this used to point at
+	# "${name}"_trimmed.fasta, which is never created for fasta input
+  	align_genome "${input}"
 
 elif [[ "${rrna_index_ok}" -eq 1 && $ext == "gz" && ${#three_adapt} -gt 0 && $umis -gt 0 ]]
 	then
