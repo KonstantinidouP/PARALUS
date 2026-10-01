@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-blue" alt="Platform">
   <img src="https://img.shields.io/badge/shell-bash-green" alt="Shell">
   <img src="https://img.shields.io/badge/data-PAR--CLIP%20%7C%20CLIP-e76f51" alt="Data">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-264653" alt="License: MIT"></a>
 </p>
 
 PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites.
@@ -284,6 +285,7 @@ PARALUS/
 ├── REFERENCE_SETUP.md       # Reference genome, annotation and rRNA index setup
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
 ├── images/                  # Workflow figure and example output plots (CPSF1) shown in this README
+├── LICENSE                  # MIT License
 └── README.md
 ```
 
@@ -300,13 +302,11 @@ If you use PARALUS in your work, please cite the above once published.
 
 ## Authors
 
-- **Dimitrios Anastasakis** - lead developer
-- **Parthena Konstantinidou** - co-developer
+- **Parthena Konstantinidou** - developer and maintainer
+- **Dimitrios Anastasakis** - original author and developer
 
 ---
 
 ## License
 
-> **[Placeholder - license to be decided]**
->
-> For now, this repository is private. License will be added prior to public release.
+PARALUS is released under the [MIT License](LICENSE).
