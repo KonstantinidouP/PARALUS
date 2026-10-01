@@ -179,7 +179,7 @@ paralus \
 # -e (rRNA depletion) is optional
 ```
 
-Option B is the simplest for a first or single run, but rebuilds the annotation every time. To save time when analysing more samples from the same organism, build it once with Trierarch (see [REFERENCE_SETUP.md](REFERENCE_SETUP.md#2-gene-annotation)) and reuse it with `-A` (Option A).
+Option B is the simplest for a first or single run, but each run with `-G` builds the annotation BED from the GTF again, even if it was built in an earlier run. To save time when analysing more samples from the same organism, build it once with Trierarch (see [REFERENCE_SETUP.md](REFERENCE_SETUP.md#2-gene-annotation)) and reuse it with `-A` (Option A).
 
 ---
 
