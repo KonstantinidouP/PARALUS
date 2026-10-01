@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-blue" alt="Platform">
   <img src="https://img.shields.io/badge/shell-bash-green" alt="Shell">
   <img src="https://img.shields.io/badge/data-PAR--CLIP%20%7C%20CLIP-e76f51" alt="Data">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-264653" alt="License: MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow" alt="License: MIT"></a>
 </p>
 
 PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencing data. It performs end-to-end processing from raw reads to annotated RNA-binding protein (RBP) binding sites.
