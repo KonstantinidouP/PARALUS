@@ -23,9 +23,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#505050"
      showguides="false"
-     inkscape:zoom="0.69972652"
-     inkscape:cx="394.43982"
-     inkscape:cy="283.68226"
+     inkscape:zoom="0.79299981"
+     inkscape:cx="242.11859"
+     inkscape:cy="305.80083"
      inkscape:window-width="1697"
      inkscape:window-height="998"
      inkscape:window-x="0"
@@ -115,7 +115,7 @@
      font-weight="normal"
      fill="#264653"
      text-anchor="middle"
-     id="text7">FASTQ, FASTQ.gz</text>
+     id="text7">FASTQ.gz, FASTQ</text>
   <text
      x="135"
      y="207.05879"
@@ -281,7 +281,7 @@
   </g>
   <text
      x="405"
-     y="186.05879"
+     y="206.05879"
      font-family="Helvetica, Arial, 'DejaVu Sans', sans-serif"
      font-size="15px"
      font-weight="normal"
@@ -290,7 +290,7 @@
      id="text21">Adapter and UMI trimming</text>
   <text
      x="405"
-     y="207.05879"
+     y="185.05879"
      font-family="Helvetica, Arial, 'DejaVu Sans', sans-serif"
      font-size="15px"
      font-weight="normal"
