@@ -1,6 +1,6 @@
 # PARALUS - Installation Guide
 
-This guide explains how to install PARALUS and its dependencies. The quickest way is the installer (`install_dependencies.sh`), which checks your system and installs everything that's needed. The manual steps for each system follow below. For a quick start, see the main [README.md](README.md).
+This guide explains how to install PARALUS and its dependencies. The quickest way is the installer (`install_paralus.sh`), which checks your system, installs everything that's needed and sets up the `paralus` command. The manual steps for each system follow below. For a quick start, see the main [README.md](README.md).
 
 ## Contents
 
@@ -13,40 +13,41 @@ PARALUS needs the following tools: STAR (or HISAT2 as the low-RAM option), samto
 
 ## Quick install (recommended)
 
-### 1. Install PARALUS
+### 1. Get PARALUS
 
-Clone the repository to any location on your machine and add it to your `PATH`, so the `paralus` command works from any folder. The last three lines add two lines to `~/.bashrc`, a label and the `PATH` setting. Run them from inside the PARALUS folder, as shown below:
+Go to the folder where you want to keep PARALUS and clone the repository:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.bashrc
-echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
-source ~/.bashrc
 ```
 
-On a Mac, use `~/.zshrc` instead of `~/.bashrc`.
-
-Check that it worked:
-
-```bash
-paralus --help
-```
-
-### 2. Install the dependencies
+### 2. Run the installer
 
 From inside the PARALUS folder, run:
 
 ```bash
-bash install_dependencies.sh
+bash install_paralus.sh
 ```
 
-The installer above works on Linux and Apple Silicon Macs. It checks which tools you already have and asks before installing anything. It then creates a conda environment called `paralus` with all PARALUS dependencies, installing Miniconda first if you don't have conda. On a Mac, it offers to reuse STAR if you've already compiled it, or compiles it for you. On computers with less than 32 GB RAM, it suggests HISAT2 instead of STAR.
+The installer works on Linux and Apple Silicon Macs. It checks which tools you already have and asks before installing anything. It then creates a conda environment called `paralus` with all PARALUS dependencies and the `paralus` command, installing Miniconda first if you don't have conda. On a Mac, it offers to reuse STAR if you've already compiled it, or compiles it for you. On computers with less than 32 GB RAM, it suggests HISAT2 instead of STAR.
 
-Useful options:
+When it finishes, reload your shell settings (or close the terminal window and open a new one), then check that it worked:
+
+```bash
+source ~/.bashrc          # on a Mac: source ~/.zshrc
+conda activate paralus
+paralus --help
+```
+
+Useful installer options:
 - `--dry-run` shows what the installer would do, without installing anything
 - `--hisat2` installs HISAT2 instead of STAR
+- `--env NAME` installs into the conda environment `NAME` instead of `paralus`, e.g. an environment you already use. Before changing an existing environment, the installer warns that conda may update some of its packages, and offers a separate `paralus` environment instead
 - `--prefix /path/to/env` - by default, the environment is saved in your home folder. Use this option to save it elsewhere if your home folder has limited disk space (common on HPC clusters). Then activate it with `conda activate /path/to/env` instead of `conda activate paralus`
+- `--launcher-only` adds the location of the PARALUS folder to your `PATH` (in `~/.bashrc`, or `~/.zshrc` on a Mac), so the `paralus` command works without a conda environment. Nothing else is installed, so the dependencies must already be available, e.g. as modules on an HPC cluster (see [Manual installation](#manual-installation))
+
+If you move the PARALUS folder later, run the installer again from inside the folder (with the same `--env` or `--prefix` option, if you used one). It finds the existing environment and only updates the `paralus` command.
 
 ### 3. Before each run
 
@@ -122,19 +123,18 @@ HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS w
 
 #### 4. Install PARALUS
 
-Clone the repository to any location on your machine and add it to your `PATH`, so the `paralus` command works from any folder. The last three lines add two lines to `~/.bashrc`, a label and the `PATH` setting. Run them from inside the PARALUS folder, as shown below:
+Clone the repository to any location on your machine, then run the installer with `--launcher-only` from inside the PARALUS folder. This only adds the location of the PARALUS folder to your `PATH` in `~/.bashrc`, so the `paralus` command works from any folder. Nothing else is installed:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.bashrc
-echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
-source ~/.bashrc
+bash install_paralus.sh --launcher-only
 ```
 
-Check that it worked:
+Reload your shell settings and check that it worked:
 
 ```bash
+source ~/.bashrc
 paralus --help
 ```
 
@@ -217,19 +217,18 @@ HISAT2 needs ~8 GB RAM to build the hg38 index and ~5 GB to align. Run PARALUS w
 
 #### 4. Install PARALUS
 
-Clone the repository to any location on your Mac and add it to your `PATH`, so the `paralus` command works from any folder. The last three lines add two lines to `~/.zshrc`, a label and the `PATH` setting. Run them from inside the PARALUS folder, as shown below:
+Clone the repository to any location on your Mac, then run the installer with `--launcher-only` from inside the PARALUS folder. This only adds the location of the PARALUS folder to your `PATH` in `~/.zshrc`, so the `paralus` command works from any folder. Nothing else is installed:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.zshrc
-echo "export PATH=\"$PWD:\$PATH\"" >> ~/.zshrc
-source ~/.zshrc
+bash install_paralus.sh --launcher-only
 ```
 
-Check that it worked:
+Reload your shell settings and check that it worked:
 
 ```bash
+source ~/.zshrc
 paralus --help
 ```
 
@@ -263,19 +262,18 @@ To use HISAT2 instead of STAR (`-H`), load `hisat2` in place of the `star` modul
 
 #### 2. Install PARALUS
 
-Clone the repository to your home or project directory and add it to your `PATH`, so the `paralus` command works from any folder. The last three lines add two lines to `~/.bashrc`, a label and the `PATH` setting. Run them from inside the PARALUS folder, as shown below:
+Clone the repository to your home or project directory, then run the installer with `--launcher-only` from inside the PARALUS folder. This only adds the location of the PARALUS folder to your `PATH` in `~/.bashrc`, so the `paralus` command works from any folder. Nothing else is installed:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.bashrc
-echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
-source ~/.bashrc
+bash install_paralus.sh --launcher-only
 ```
 
-Check that it worked:
+Reload your shell settings and check that it worked:
 
 ```bash
+source ~/.bashrc
 paralus --help
 ```
 
