@@ -1,0 +1,13 @@
+{
+  "title": "PARALUS: A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis",
+  "upload_type": "software",
+  "description": "PARALUS is an end-to-end pipeline for PAR-CLIP and CLIP sequencing data. It takes raw sequencing reads through processing, alignment, binding site calling and annotation, and plots sequence enrichment at binding sites and the distribution of reads across transcript regions. It runs on Linux and macOS.",
+  "creators": [
+    {"name": "Konstantinidou, Parthena", "affiliation": "University of Gothenburg"},
+    {"name": "Sarshad, Aishe A.", "affiliation": "University of Gothenburg"},
+    {"name": "Benhalevy, Daniel", "affiliation": "Tel Aviv University"},
+    {"name": "Anastasakis, Dimitrios G.", "affiliation": "University of Crete"}
+  ],
+  "license": "MIT",
+  "keywords": ["PAR-CLIP", "CLIP", "RNA-binding proteins", "binding site identification", "bioinformatics pipeline"]
+}
