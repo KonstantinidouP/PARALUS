@@ -315,6 +315,8 @@ PARALUS/
 
 If you use PARALUS in your work, please cite the above once published.
 
+If you like PARALUS, give us a star ⭐!
+
 ---
 
 ## Authors
