@@ -7,579 +7,6 @@
 #
 # Released under the MIT License (see LICENSE)
 #
-# PARalus 1.5.1 this version was with addition of --outSAMmultNmax 1 --outMultimapperOrder Random 
-# PARalus 1.5.3 this version was with addition of rRNA mapper toget rRNA maping stats and also with a cluster.csv cleaner with priority in annotations as 3ss > 5ss > start_codon > stop_codon> 3utr> 5utr > CDS > exon > intron 
-# PARalus 1.6:
-#   - fixed a real strand bug in TtoC crosslink-site extraction: the two
-#     single-mismatch reverse-strand (G->A) branches were gated on the
-#     forward-strand SAM flag (0/256) instead of reverse (16/272), silently
-#     dropping single-conversion reverse-strand reads entirely (no error,
-#     just missing signal - hits minus-strand genes hardest)
-#   - fixed cluster annotation resolution: gene/annotation/biotype used to
-#     be resolved as three independent "|"-joined lists with no positional
-#     correspondence, which could report a gene+annotation+biotype
-#     combination that matched no real feature (e.g. GENE_A's annotation
-#     stitched to GENE_B's biotype). Now each hit's gene:annotation:biotype
-#     is packed as one unit that survives the merge intact, and a single
-#     pass picks one whole winning hit
-#   - added overlap-bp as a tiebreaker when two hits are tied on the same
-#     biotype/annotation priority tier (previously arbitrary/first-in-list)
-#   - the six trailing sed patches (e.g. 3utr,tRNA -> exon,tRNA) are removed:
-#     they were compensating for exactly the annotation-bed overlap bug this
-#     fix addresses at the source, and the new packed-unit format doesn't
-#     match their old text pattern anyway
-#   - -f (genome fasta) is now validated up front and independently of
-#     whether the STAR index already exists, instead of only erroring when
-#     BOTH are missing (previously could run for 10+ minutes of STAR
-#     mapping before failing much later at samtools calmd with an empty
-#     reference path)
-#   - added an explicit STAR index check as its own clear error, split out
-#     from the -f check above
-#   - full run logging: stdout+stderr now tee'd to a timestamped log file,
-#     and the exact invoked command is recorded in both that log and
-#     _stats.txt
-#   - cleanup rm calls now use -f (several would throw a cosmetic "cannot
-#     remove: no such file" if a given run's code path never created that
-#     intermediate file); removed one fully redundant duplicate rm at the
-#     very end of the script
-#   - removed dead variable references ($gtf, $tmapa, $genome - never
-#     assigned by any option, leftover from an older version) from the
-#     stats output; replaced with the annotation file path instead
-#   - fixed lincRNA/lncRNA typo (the pipeline only ever produces "lncRNA" as
-#     a biotype value, so the "lincRNA_XL_reads" stat was permanently zero)
-#   - fixed swapped snoRNA_clusters/snRNA_clusters stat labels (each was
-#     being printed under the other's name)
-# PARalus 1.6.1:
-#   - -A now requires Trierarch's bed output, not a raw gtf: a format guard
-#     checks column count and numeric start/end before anything runs, and
-#     fails immediately with a clear message instead of burning 10+ minutes
-#     of STAR/samtools before crashing deep in a bedtools step
-#   - alt/unplaced scaffold contigs (e.g. GL000008.2-style GenBank
-#     accessions) are filtered out of every downstream bed file via a
-#     chromosome whitelist built from whatever contigs the annotation bed
-#     actually uses - organism/naming-convention agnostic, since it's driven
-#     by the annotation rather than a hardcoded "^chr" pattern. Note this
-#     will NOT remove a scaffold that genuinely carries an annotated gene
-#     (e.g. GENCODE does annotate some genes on GL000008.2) - that's real
-#     biology, not naming noise
-#   - 5mer enrichment background redesigned: same-gene-constrained (nearest
-#     available proxy to "same transcript" - the annotation is gene-level),
-#     strand-aware (shift direction now follows transcript orientation, not
-#     just genomic +/-), clamped to the gene's own boundaries, and excluded
-#     entirely (from both bound and background, keeping them paired 1:1) if
-#     the candidate background would overlap any real cluster - including
-#     its own, if clamping pushed it that close. This also fixes the old
-#     background/foreground sample-size mismatch near chromosome starts, and
-#     the k-mer counting implementation is now a single fast pass instead of
-#     1024 separate grep calls (counting convention unchanged - intentionally
-#     non-overlapping, matching the original grep -o behaviour)
-#   - -G added: point at a raw gtf and Trierarch runs automatically to build
-#     the annotation bed (~1 min), cached by gtf/database modification time
-#     on later runs. -t/-M/-C/-U forward tRNA_DB/miRNA_DB/canonical-only/
-#     keep-unnamed to Trierarch (uppercase M/C/U since lowercase m/c/u are
-#     already Paralus's own options). -A still works unchanged if you
-#     already have a bed built
-# PARalus 1.6.2:
-#   - Trierarch merged into this same file as a function (run_trierarch),
-#     so the whole pipeline is one script for GitHub instead of two. Every
-#     variable it uses is declared local, and all of its own `exit` calls
-#     became `return`, so it can never leak state into or be killed
-#     independently of the rest of this script. Two ways to reach it:
-#     standalone (./paralus.sh --trierarch -G genes.gtf -C -o output) or
-#     automatically from a normal run via -G, same as before - -G no longer
-#     needs to locate a separate trierarch.sh file at all
-# PARalus 1.6.3:
-#   - -M/-C/-U are now Trierarch's own native flags (its getopts previously
-#     still used lowercase -m/-c/-u internally, requiring Paralus's -g
-#     integration to translate case on every call - now identical letters
-#     work standalone and via -g, no translation, one less thing to get
-#     out of sync)
-#   - -g renamed to -G throughout (both Paralus's own flag and Trierarch's
-#     native one): pairs with -A (annotation bed) the same way -G pairs
-#     with it conceptually - both uppercase, both "how the annotation is
-#     obtained", vs the mostly-lowercase preprocessing flags below
-# PARalus 1.6.4:
-#   - -t/-o renamed to -T/-O (Trierarch's tRNA_DB and output-prefix flags):
-#     no collision ever forced these two to be lowercase, unlike M/C/U/G,
-#     but leaving them lowercase broke the "Trierarch's flags are all
-#     uppercase, standalone or via Paralus" rule for no real reason
-# PARalus 1.6.5:
-#   - k-mer enrichment generalized from a hardcoded 5-mer to 3-mer, 4-mer,
-#     and 5-mer, run automatically (perl's mer-list generator now builds any
-#     k iteratively instead of 5 hardcoded nested loops)
-#   - background redesigned to use BOTH an upstream and a downstream real
-#     flanking region per cluster (strand-aware, same-gene-clamped, as
-#     before), instead of one side only. A cluster is kept only if both
-#     sides come back clean (full length, no overlap with any real cluster);
-#     otherwise it's dropped from bound/upstream/downstream alike, keeping
-#     all three paired 1:1:1. The two background counts are averaged per
-#     k-mer before comparing against bound
-#   - added a log-log scatter plot per k (avg background on x, bound on y)
-#     via python3/matplotlib, written as <name>_kmer<k>_enrichment.pdf; the underlying
-#     counts are also kept as <name>_kmer<k>.tsv. Falls back to a note in
-#     _stats.txt (skips the plot, keeps the tsv) if python3/matplotlib isn't available
-#     rather than failing the whole run over a missing plotting tool
-# PARalus 1.6.6:
-#   - fixed a real, pre-existing bug that made k-mer enrichment silently
-#     produce empty/all-zero output on real data: "${name}".clusters.bed has
-#     always been written with columns 4 and 5 swapped relative to normal
-#     BED convention (column 4 is a literal "." placeholder, column 5 is the
-#     actual cluster ID - inherited from how the CSV-to-bed conversion was
-#     already written, predating the k-mer feature entirely). The k-mer
-#     code assumed the standard convention (cluster ID in column 4), so
-#     every cluster's ID looked identical ("."), collapsing the whole
-#     genome's clusters down to a single row during deduplication. Fixed by
-#     reading column 5 where the real cluster ID actually lives. My own
-#     synthetic tests never caught this because they used hand-built
-#     fixtures with the ID already (incorrectly) in column 4, matching my
-#     wrong assumption rather than the real file
-#   - matplotlib now degrades gracefully (skips the plot, notes it in
-#     _stats.txt, keeps the tsv) if a k-mer's data ends up empty/all-zero,
-#     instead of crashing with a traceback
-# PARalus 1.6.7:
-#   - the 1.6.6 fix was verified correct on re-inspection, but the same
-#     "Unable to open file ..._candidate_upstream.bed" error recurred on a
-#     real run, meaning something else is going on that couldn't be seen
-#     from the error alone - the diagnostic file (_cluster_gene.tsv) was
-#     being deleted immediately after use, so there was no way to tell where
-#     the data actually disappeared. Added real row-count diagnostics to
-#     _stats.txt at each stage (clusters, gene envelopes, clusters matched to
-#     a gene, upstream/downstream candidates that fit within their gene
-#     bounds) so the next run points at the actual failure point instead of
-#     another guess
-#   - both candidate bed files are now touched into existence even if empty,
-#     so a genuine zero-candidate case degrades gracefully (empty k-mer
-#     data, plot skipped, already handled by the 1.6.6 guard) instead of
-#     bedtools hard-crashing with "Unable to open file"
-# PARalus 1.6.8:
-#   - reverted the k-mer section entirely back to the original, pre-1.6.5
-#     logic (single flanking-shift background, unpaired, 1024 separate grep
-#     calls, 5-mer only) - the 1.6.5-1.6.7 redesign (dual-sided background,
-#     3/4/5-mer, gene-envelope pairing) kept surfacing real but hard-to-
-#     reproduce bugs on real genome-scale data, so going back to the known-
-#     stable version rather than continuing to debug blind
-#   - added a small python3/matplotlib addition on top of the ORIGINAL
-#     logic only: a log-log scatter plot of the existing background/bound
-#     counts already written to <name>_5mers.txt, saved as
-#     <name>_5mer_enrichment.pdf. Nothing about the background/counting
-#     itself changed - same file, same columns, same numbers as before;
-#     this just reads that output and plots it. Skipped silently if
-#     matplotlib isn't available (core pipeline is unaffected either way)
-# PARalus 1.6.9:
-#   - replaced the inline plotting snippet with a small standalone-quality
-#     tool (kmer_enrichment.py), embedded as a heredoc and written out at
-#     runtime so it's still one file for GitHub. Adds: ratio-based ranking
-#     (with a pseudocount, since real k-mer data is sparse enough that raw
-#     count2/count1 constantly hits divide-by-zero/infinite ratios that
-#     would otherwise dominate the "most enriched" list from pure sampling
-#     noise), a top/bottom-10 enriched-motif summary appended to
-#     _stats.txt, and a labeled PNG scatter (red=enriched, blue=de-enriched)
-#     instead of the earlier unlabeled log-log PDF. Output is now
-#     <name>_5mer_ratios.tsv (ranked) + <name>_5mer_enrichment.png
-
-# PARalus 1.6.18 (branched from the known-good 1.6.9 baseline, NOT the same
-# lineage as the abandoned 1.6.10-1.6.14 - those had a real reproducibility
-# bug in the subsampling rewrite, not caught until a user compared repeated
-# runs; fixed here from scratch, one loop at a time, each verified on real
-# data before moving to the next):
-#   - NonNormal-cluster subsampling: used to spawn one separate samtools
-#     process per region (`samtools view -s fraction region`), replaced
-#     with one pass - bedtools intersect pairs every read with its region's
-#     fraction, one awk pass makes the keep/drop draw per read (a
-#     deterministic hash of the read name, not awk's rand() - confirmed
-#     non-reproducible across process invocations in this environment even
-#     with an explicit seed), one final samtools call extracts the kept
-#     reads. Verified reproducible via md5sum on two independent runs of
-#     the exact assembled block, and the hash itself verified
-#     well-distributed (5000 sequential test names landed 490-519 per
-#     decile, expected ~500 - important since read names here are often
-#     sequential, and a weak hash would bias the subsample toward
-#     contiguous blocks rather than a genuine scatter)
-#   - 5-mer counting: used to spawn a separate grep process per mer per
-#     fasta file (2048 subprocess spawns total), replaced with one awk pass
-#     per fasta file. An EARLIER attempt at this same fix (in the abandoned
-#     1.6.10-1.6.14 lineage) was shipped as "verified byte-identical,"
-#     which was wrong - that test only used 3-4 hand-picked mers and never
-#     exposed either of two real bugs, both only caught because a user
-#     insisted the counts really were wrong on real data rather than
-#     accepting "already tested":
-#       1) a single shared "skip 5 ahead after a match" pointer is not the
-#          same as giving each of the 1024 mers its own independent grep
-#          scan - two different mers can legitimately match at overlapping
-#          starting positions (e.g. "AAAATTT" contains AAAAT, AAATT, and
-#          AATTT, at positions 1/2/3 - grep finds all three independently;
-#          a shared pointer finds only the first and skips past the other
-#          two). Fixed by tracking a separate "next allowed position" per
-#          mer instead of one shared pointer
-#       2) that per-mer tracking has to reset at the start of every
-#          sequence (fasta line/record) - grep's matching is inherently
-#          line-scoped, so a mer's match near the end of one sequence must
-#          not block a legitimate match near the start of an unrelated one
-#     This time verified byte-identical against the real grep -o loop at
-#     full 1024-mer scale, on a multi-sequence test file, not a handful of
-#     hand-picked mers - the exact conditions the previous "verified" claim
-#     was missing
-#   - removed the last remaining perl dependency: this branch started from
-#     the pre-perl-removal 1.6.9 baseline, so it never got the fix applied
-#     earlier in the abandoned 1.6.10 lineage. The 1024-5mer list (5 nested
-#     perl loops over A/T/C/G) is replaced with bash's own brace expansion
-#     (`echo {A,T,C,G}{A,T,C,G}{A,T,C,G}{A,T,C,G}{A,T,C,G}`), verified to
-#     produce the identical set of 1024 5-mers - one less tool to install,
-#     since bash is already a hard requirement anyway
-#   - added timing lines to _stats.txt: total pipeline wall-clock time, plus
-#     per-stage time for the NonNormal subsampling step, so the actual time
-#     saved on real data is measurable rather than assumed
-
-# PARalus 1.6.19:
-#   - 5-mer background is now both an upstream (-200) and downstream (+200)
-#     flanking region per cluster, not just one side - kept deliberately
-#     simple (flat genomic shift, not strand-aware/gene-constrained like an
-#     earlier, more complex attempt at this that kept surfacing
-#     hard-to-reproduce bugs on real data and was reverted). Each side is
-#     independently dropped if the shift would go past either end of the
-#     chromosome (checked against the genome fasta's .fai index) or if it
-#     lands on any real cluster (bedtools subtract -A against
-#     clusters.bed) - a cluster can lose one side and keep the other. The
-#     final background count per k-mer is the average of its upstream and
-#     downstream counts, rounded to the nearest integer (round-half-up).
-#     Verified all three conditions (normal case, chromosome-start edge,
-#     chromosome-end edge, overlap with another real cluster) on a test set
-#     before shipping, including one case not originally designed for
-#     (a cluster's downstream shift landing on a different real cluster,
-#     not just itself) that the same exclusion rule correctly caught
-
-# PARalus 1.6.21:
-#   - stopped deleting "${name}".aligned_TtoC.bed in cleanup. This is the
-#     per-READ TtoC bed (one row per read showing a real conversion),
-#     before it gets deduped into aligned_TtoC_loc.bed (one row per unique
-#     location, no depth information). Standalone downstream tools (e.g.
-#     the metagene scripts) that want to weight sites by read depth/
-#     confidence - rather than counting every site equally regardless of
-#     how many reads support it - need this per-read file to compute that;
-#     it was otherwise gone by the time any such tool could use it. No
-#     other behavior changed - every other cleanup deletion is untouched
-
-# PARalus 1.6.22:
-#   - k-mer enrichment: bumped --top from 10 to 32 (both the labeled top/
-#     bottom summary in _stats.txt and the labeled points on the scatter)
-#   - added the 5'UTR/CDS/3'UTR and intron metagene tools directly into the
-#     pipeline, run automatically at the end against three site sources:
-#       - clusters (from clusters.csv) - unweighted, every site counts
-#         equally, matching how clusters are already reported elsewhere
-#       - groups (from groups.csv, the pre-TtoC-filter version of the same
-#         data) - also unweighted. Using groups rather than only clusters
-#         matters for plain CLIP data with no 4SU/6SG labeling at all:
-#         clusters.csv requires TtoC support to promote a group into a
-#         cluster, which can throw out nearly everything real when there's
-#         no conversion signal to filter on in the first place
-#       - TtoC locations - weighted by real per-location read depth
-#         (recovered from the per-read aligned_TtoC.bed that 1.6.21 stopped
-#         deleting specifically for this), so a location supported by 7
-#         reads counts more than one supported by 1
-#     Output: <name>_clusters_utr_cds.pdf, <name>_groups_utr_cds.pdf,
-#     <name>_ttoc_utr_cds.pdf, <name>_clusters_intron.pdf,
-#     <name>_groups_intron.pdf, <name>_ttoc_intron.pdf. A genuine
-#     zero-qualifying-data case (e.g. too few clusters landing in intron
-#     regions) is skipped with a clear note in _stats.txt rather than
-#     producing an empty or misleading plot - verified this exact case on
-#     synthetic data before shipping, not just the cases with real output
-#   - verified the whole block against synthetic clusters.csv/groups.csv/
-#     aligned_TtoC.bed matching the real 17-column format, then re-verified
-#     by extracting and running the exact assembled code from this
-#     deployed file (not just the standalone metagene scripts in
-#     isolation), confirming the heredoc embedding didn't corrupt anything
-
-# PARalus 1.6.23:
-#   - dropped the clusters/groups metagene outputs, keeping only the
-#     depth-weighted TtoC one: <name>_ttoc_utr_cds.pdf and
-#     <name>_ttoc_intron.pdf. Cuts the added runtime from 6 metagene runs
-#     down to 2, and TtoC was the one actually wanted going forward
-
-# PARalus 1.6.24:
-#   - 5-mer enrichment plot output changed from .png to .pdf
-#     (<name>_5mer_enrichment.pdf), matching the metagene outputs. No
-#     change to the plot itself or the underlying ranked tsv
-
-# PARalus 1.6.25:
-#   - cleanup now also removes the rRNA pre-mapping intermediates (only
-#     present if -e was used): pre_rRNA_dep_*_trimmed.fasta,
-#     rRNA_depleted_*_trimmed.fasta, and STAR's own small log files for
-#     that run (SJ.out.tab, Log.progress.out, Log.out, Log.final.out).
-#     Deliberately NOT deleting rRNA_aligned_*Aligned.sortedByCoord.out.bam
-#     - that's the reads that actually mapped to rRNA, real data worth
-#     keeping if you want to look at binding on rRNA itself, not just an
-#     intermediate
-#   - also removes "${name}".aligned_TtoC_loc.bed (the deduped, one-row-
-#     per-location TtoC bed) - it's fully consumed by the coverage steps
-#     earlier in the pipeline, and now reconstructable on demand from
-#     aligned_TtoC.bed (kept since 1.6.21) via the same merge command
-#     already used for the metagene weighting, so keeping both was
-#     redundant. Verified with dummy files matching the exact real
-#     filenames before shipping - confirmed the rRNA BAM and
-#     aligned_TtoC.bed survive, everything else is removed
-
-# PARalus 1.7.5:
-#   - added HISAT2 as an alternative alignment engine, selected with the
-#     new -H flag. STAR needs its whole genome index in RAM to build AND
-#     to align against (~30 GB for human hg38), which most 16 GB Mac
-#     laptops can't do; HISAT2 uses an FM-index instead (~4-5 GB for
-#     human), so -H is meant for exactly that case. -x/-e take a HISAT2
-#     index basename (from hisat2-build) instead of a STAR genomeDir when
-#     -H is set. All fifteen inline STAR calls across the rRNA-pre-mapping
-#     and genome-alignment branches are now routed through two small
-#     wrapper functions (prealign_rrna, align_genome) that dispatch to
-#     STAR or HISAT2 - the STAR branch of each is byte-for-byte what was
-#     previously inlined at each call site, so default (non -H) behaviour
-#     is unchanged
-#   - fixed a latent fragility this surfaced: T-to-C extraction assumed
-#     the MD tag always lands in SAM column 13, true only because of
-#     STAR's specific --outSAMattributes NH MD HI AS ordering. Now located
-#     by its MD:Z: prefix wherever it actually is, so extraction is
-#     correct regardless of which aligner (or tag order) produced the bam
-#   - index-presence checks (-x and -e, both the up-front validation and
-#     every rRNA-branch condition further in) now resolve once into
-#     aligner-aware booleans (main_index_ok/rrna_index_ok) instead of
-#     hardcoding STAR's SAindex file in ten separate places
-
-# PARalus 1.7.6:
-#   - HISAT2 mode (-H) was under-reporting alignments and disagreeing with
-#     STAR on read counts, traced to two issues in the hisat2 calls added
-#     in 1.7.5:
-#       1) no cap on reported alignments per read, so HISAT2 was emitting
-#          secondary (256/272-flagged) alignments STAR never produces here
-#          (STAR's --outSAMmultNmax 1 --outMultimapperOrder Random reports
-#          exactly one locus per read) - inflating both the bam and every
-#          downstream group/cluster read count. Fixed with -k 1.
-#       2) HISAT2's default mismatch scoring is tuned for ordinary RNA-seq
-#          and penalized PAR-CLIP's systematic T-to-C conversions too
-#          harshly, dropping a large fraction of real crosslinked reads
-#          that STAR's permissive --outFilterMismatchNoverLmax 0.05
-#          tolerates. Fixed with --score-min L,0,-0.3 (matches STAR's 5%
-#          mismatch tolerance under HISAT2's default --mp 6,2 penalty)
-
-# PARalus 1.7.7 (superseded by 1.7.8, see below):
-#   - attempted to fix HISAT2 still under-mapping relative to STAR
-#     (~26% fewer primary alignments in testing after 1.7.6) by adding -N 1,
-#     reasoning by analogy with bowtie2's seed-mismatch option. This was
-#     wrong: HISAT2 has no -N flag (its seed-and-extend strategy is
-#     different from bowtie2/HISAT and doesn't expose -N/-L/-i the same
-#     way) - would have errored out with "unrecognized option" on any real
-#     run. Never actually validated against data before being reverted.
-
-# PARalus 1.7.8:
-#   - reverted the invalid -N 1 from 1.7.7. Back to the 1.7.6 config
-#     (-k 1 --score-min L,0,-0.3), which was verified against real data
-#     to fix the secondary-alignment inflation and recover a meaningful
-#     share of the reads STAR was finding that HISAT2's default scoring
-#     missed. A real gap vs STAR may still remain on some datasets; if so,
-#     the next lever to try is --mp (mismatch penalty, default 6,2 - note
-#     -f implies --ignore-quals, so every mismatch is charged the MX=6
-#     max penalty) rather than another seed-tuning flag, since HISAT2
-#     doesn't expose one. Check the per-run *_hisat2_summary.log ("X%
-#     aligned 0 times" etc.) before tuning further - it will show whether
-#     unaligned reads are failing to align at all (a scoring issue) or
-#     something else
-
-# PARalus 1.7.9:
-#   - after 1.7.8, HISAT2 was still mapping ~26% fewer reads than STAR on
-#     real data (3.41M vs 4.61M primary, same sample), plateaued despite
-#     the 1.7.6/1.7.8 --score-min loosening. Working hypothesis: crosslink
-#     sites in CLIP data often show up as a 1-nt deletion, not just a
-#     T-to-C substitution, and HISAT2's default gap cost (--rdg/--rfg
-#     5,3) alone already exceeds the score floor for a short read even
-#     before any mismatch - a single-nt deletion costs 5+1*3=8, which is
-#     more negative than the -0.3 floor gives a 25bp read (-7.5), so any
-#     gap-containing alignment was being rejected outright regardless of
-#     the earlier mismatch-penalty tuning. Loosened --score-min to
-#     L,0,-0.6 and --rdg/--rfg to 3,1 (gap cost now 3+1=4) so a single
-#     gap plus a mismatch or two both fit under the new floor.
-#   - VERIFIED against real data: recovered 3.92M/4.61M primary reads vs
-#     STAR (up from 3.41M at 1.7.8), secondary alignments still 0, TtoC
-#     fraction a sane 40.3% of aligned reads, MAPQ distribution clean
-#     (82% MAPQ60). Residual ~15% gap vs STAR accepted as an inherent
-#     difference between HISAT2's seed-and-extend and STAR's
-#     maximal-prefix search, not chased further to avoid trading real
-#     recovery for spurious/ambiguous placements
-
-# PARalus 1.8.0:
-#   - Trierarch (annotation BED builder) could emit two rows for what is
-#     really a single gene: one under its real gene_name, one under its
-#     bare gene_id/ENSG accession (only surfaces with -U, since without
-#     -U the unnamed lines are just dropped, not relabelled). Cause:
-#     gene_name was resolved independently per GTF line, from that line's
-#     own attributes alone; real annotations aren't always consistent
-#     about which lines for a gene carry a gene_name (e.g. one transcript
-#     of an otherwise-named gene lists only gene_id), so those lines fell
-#     into their own name-group at the bedtools groupby step further
-#     down. Both groups are built from exons of the same real locus, so
-#     their coordinate spans can come out identical or near-identical -
-#     exactly the "duplicate entries with matching distributions" pattern
-#     reported against real data. Fixed by resolving gene_name once per
-#     gene_id, from every line in the gtf that has one, before the -U
-#     fallback ever runs - a gene only falls back to its gene_id now if
-#     it truly has no gene_name anywhere in the file, not just on the
-#     line being read. Verified against a synthetic repro (a gene with
-#     one gene_name-less exon line) before shipping.
-
-# PARalus 1.8.1:
-#   - the -G annotation cache (reuses <gtf>_Paralus.bed instead of
-#     re-running Trierarch every time) only ever checked file timestamps
-#     (gtf/-T/-M vs the bed) to decide whether to rebuild. It never
-#     checked whether -C/-U themselves had changed between two runs on
-#     the same gtf - since those flags don't touch any file on disk, the
-#     gtf's mtime looks identical either way, so switching e.g. from
-#     "-C -U" to "-C" alone silently reused the bed built by the
-#     previous run's flags instead of rebuilding for the current ones.
-#     Confirmed on real data: two runs with different -U settings on the
-#     same gtf produced byte-identical output bed files. Fixed with a
-#     small stamp file (<gtf>_Paralus.bed.build_flags) recording exactly
-#     which flags built the current bed; a mismatch (or a missing stamp,
-#     e.g. a bed left over from before 1.8.1) now forces a rebuild
-#     regardless of what the file timestamps say. Verified with a
-#     simulated repro of the exact failing sequence (-C -U, then -C)
-#     before shipping - now rebuilds on the flag change and correctly
-#     still reuses the cache when flags are unchanged.
-
-# PARalus 1.8.2:
-#   - removed the -G annotation cache entirely (the mtime check from
-#     before 1.8.1, and the flag-stamp added in 1.8.1). It was solving a
-#     problem -A already answers directly: if you don't want Trierarch to
-#     rerun, build the bed once and pass it back in with -A. Silently
-#     reusing a previously-built annotation under an implicit set of
-#     rules was a real source of confusion in practice. -G now always
-#     runs Trierarch fresh, every time - what you get is always exactly
-#     what the flags on that invocation produce, no cache to go stale.
-#   - ship ASCII art in --help was misaligned (a stray 5th oar with no
-#     matching rower, and the other four not column-aligned under their
-#     rowers) and had no commander figure. Rebuilt with exactly 4 rowers,
-#     4 oars column-aligned under them (checked programmatically, not by
-#     eye, before shipping), and a commander with sword raised added
-#     above the deck.
-
-# PARalus 1.8.3:
-#   - even with gene_name resolved once per gene_id (1.8.0), two
-#     genuinely different gene_ids can still legitimately end up with the
-#     exact same chrom/start/end/strand - e.g. a named gene and a
-#     separate ENSG-only annotation covering the identical interval (only
-#     possible with -U, since without -U there's no ENSG-named row to
-#     begin with). Added a final pass at the end of Trierarch: for any
-#     group of rows sharing the exact same interval and strand, if at
-#     least one has a real gene_name, drop the ENSG-only row(s) in that
-#     group and keep the named one; if every row at that interval is
-#     ENSG-only (no named alternative exists for it), keep them all
-#     rather than deleting information. Strand is part of the grouping
-#     key specifically so two true antisense genes overlapping the same
-#     interval are never merged. Verified against a synthetic bed
-#     covering same-strand duplicate, ENSG-only-no-alternative, and
-#     opposite-strand-not-merged cases before shipping.
-
-# PARalus 1.8.4:
-#   - a run given only -G (and Trierarch flags like -T/-C/-U) but no -i/-x
-#     ran the full Trierarch annotation build (~1 min) BEFORE ever
-#     checking that -i/-x were even provided, then failed on a confusing
-#     "genome index not found at .1.ht2" message for an -x that was
-#     simply never given, rather than a real path that was wrong. Added
-#     an early check, before anything expensive runs, that fails fast
-#     with a specific message when -G/-A were given but -i/-x weren't -
-#     that combination almost always means "I only wanted to build the
-#     annotation," so the message points directly at --trierarch
-#     standalone (which needs neither -i nor -x) instead of failing
-#     generically or wasting a Trierarch run first. Verified against the
-#     exact reported command (-G ... -T ... -C -U, no -i/-x): now fails
-#     immediately with the standalone-Trierarch suggestion; a normal run
-#     with -i/-x present passes through the check unaffected.
-#   - while writing that message, noticed (and fixed) a stale hardcoded
-#     filename (./paralus1_6_25.sh) in three help/error messages,
-#     left over from early in this changelog and never updated across
-#     any of the later version bumps - all three now say ./Paralus,
-#     matching the Usage: lines, so this can't go stale on the next bump.
-
-# PARalus 1.8.5:
-#   - the 1.8.3 dedup fix only catches a named gene and its ENSG-only
-#     duplicate surviving as two SEPARATE rows at the same interval. Real
-#     GTFs can also carry a gene and a separate duplicate/transcript-level
-#     record with IDENTICAL exon coordinates - which the exon-merging
-#     bedtools merge steps earlier in Trierarch (same-strand,
-#     touching/overlapping intervals, -o distinct on the name column) had
-#     already concatenated into ONE row before 1.8.3's check ever runs,
-#     producing a single combined name like "TP53|ENSG00000141510" (the
-#     comma->pipe conversion happens right after that merge). Since
-#     there's only one row by the time 1.8.3 looks, it never saw this
-#     case. Added a separate cleanup pass: for any row whose name is a
-#     pipe-separated list, if at least one entry is a real gene name, drop
-#     the ENSG-prefixed entries and keep the real name(s). A list that's
-#     ENSG-only (no real name anywhere in it) is left untouched - same
-#     principle as 1.8.3, never delete the only annotation a locus has.
-#     Two or more genuinely different real gene names in the same list
-#     (two named genes that legitimately overlap) are also left untouched
-#     - only ENSG-prefixed tokens are ever dropped. Verified against a
-#     synthetic bed covering all four cases (named+ENSG mix, ENSG-only,
-#     two real names, single name) before shipping.
-
-# PARalus 1.8.6:
-#   - fixed the samtools "duplicate header" warnings seen in NonNormal
-#     subsampling. The 1.7.4 samtools <1.12 workaround replaced
-#     "samtools view -N" with "samtools view -h | awk", which kept the
-#     header lines (/^@/) and appended them to aligned_sqrt.sam, a file
-#     that already starts with the header written by "samtools view -H".
-#     Every @SQ line ended up in the file twice. The original -N call
-#     never printed a header, so -h and the /^@/ match are removed and
-#     only the kept reads are appended, as before 1.7.4
-#   - samtools sort's "[bam_sort_core] merging from ..." progress notes
-#     (one per sort, four per run) now go to the run log only
-#     (2>> "${runlog}"), so they no longer show on screen
-#   - STAR's progress output (echoed command, version, timestamps) now goes
-#     to the run log only (>> "${runlog}"), matching the HISAT2 branch.
-#     Only stdout is redirected: STAR's fatal errors go to stderr, so they
-#     still show on screen
-#   - "groups:" and "clusters:" in _stats.txt were one higher than the
-#     real count, since wc -l also counted the csv header line. Both now
-#     subtract the header
-#   - "Could not find any combinations of options for the input" was
-#     inside the last elif branch instead of an else, so it printed on
-#     every run that hit that branch (fastq.gz + rRNA index + 3' adapter,
-#     no UMIs) and never when no branch matched. Moved to a proper else
-#     that exits, so an unsupported input combination now stops the run
-#     instead of continuing with no alignment
-#   - added a finish message at the end of a run: number of binding sites
-#     (clusters), total run time, and the output directory. It only reports
-#     success if clusters.csv has at least one cluster (a failed run still
-#     writes the header line); otherwise it says no clusters were found and
-#     points to the run log
-
-# PARalus 1.8.7:
-#   - -i now accepts a full path to the input file. Outputs are written to
-#     the input file's folder. With no path, the file is looked for in the
-#     current folder and outputs go there, as before. Previously -i was cut
-#     down to the file name before file_dir was set, so file_dir was always
-#     "." and the input had to be in the current folder. -x, -A, -f and -e
-#     are now turned into absolute paths before the cd into the input's
-#     folder (as -G/-T/-M already were), so relative paths still work. The
-#     cd now stops the run with an error if the folder doesn't exist
-#   - added a dependency check at startup: samtools, bedtools, the selected
-#     aligner (STAR, or hisat2 with -H) and cutadapt (only when adapters or
-#     UMIs are given). If any is missing, the run stops right away with one
-#     message listing them, instead of continuing with a "command not
-#     found" error at every step
-#   - fixed the message for fastq.gz + rRNA genome + 3' adapter without
-#     UMIs, which said "have UMIs and adapters" although that branch only
-#     runs when no UMIs are given
-#   - help and error messages now show the command as "paralus" (the
-#     launcher) instead of "./Paralus"
-#   - input and setup errors (missing -i/-x, missing index, annotation or
-#     input file, or Trierarch not producing an annotation) now exit with
-#     status 1 instead of 0, so scripts and job schedulers see the run as
-#     failed
-#   - the -G help text no longer says the annotation is cached and reused;
-#     that cache was removed in 1.8.2, and -G rebuilds it on every run
-#   - uncompressed .fastq input now works with a 3' adapter but no UMIs, or
-#     with neither (with or without -e). Before, only adapters + UMIs were
-#     handled for .fastq, and the other cases stopped with "Could not find
-#     any combinations of options for the input"
-#   - .fasta input without -e now aligns the input file. It used to pass
-#     <name>_trimmed.fasta to the aligner, a file that is never created for
-#     fasta input, so the run could not work
-
 # --------------------------------------------------------------------------
 # run_trierarch: Trierarch's annotation-building logic, as a function so it
 # lives in the same process as Paralus - no separate file to locate, no
@@ -604,18 +31,7 @@ run_trierarch() {
 # In Athens, the trierarch was the citizen responsible for equipping and
 # outfitting a trireme before it sailed. This script equips the bed file
 # Paralus runs on.
-#
-# v3.0 changes vs masterchef_v2:
-#   - gene_type OR gene_biotype attribute now recognised (works with GENCODE and
-#     Ensembl/other gtfs, not just gencode.vNN)
-#   - added -M for an external miRNA database (miRBase gff3 or plain bed6), on top
-#     of the existing -t for tRNA database (GtRNAdb bed6)
-#   - overlap resolution is now a general priority cascade (see PRIORITY below)
-#     instead of a single ad-hoc "subtract protein_coding from smallRNA" step.
-#     This mirrors the exact annotation/biotype priority Paralus itself already
-#     assumes downstream in its cluster-cleaning step, so the fixups Paralus used
-#     to do with sed (3utr,tRNA -> exon,tRNA etc.) are no longer needed because
-#     the bed file is already conflict-free coming out of this script.
+
 
 unset ALL_PROXY
 prog=$0
@@ -779,24 +195,7 @@ cat "$gtf" | awk -F "\t" 'tolower($3) == "exon" || tolower($3) == "start_codon" 
     | grep -v "##" | sed 's/"//g' | sed 's/;//g' | sed 's/[[:space:]]/\t/g' | sed 's/\t\t/\t/g' | sed 's/"="/\t/g' \
     > "${gtfname}"_gtf_tokens.tmp
 
-# --------------------------------------------------------------------------
-# PARalus 1.8.0: gene_name used to be resolved independently per GTF line,
-# from that line's own attribute string alone. Real annotations aren't
-# always consistent about which lines for a given gene_id carry a
-# gene_name (e.g. some transcript/feature lines for an otherwise-named
-# gene only list gene_id) - since everything downstream groups by this
-# per-line name, that silently split a single gene across two output
-# rows: one keyed by its real gene_name, one keyed by its bare
-# gene_id/ENSG accession (only surfaces with -U, since without -U the
-# unnamed lines are just dropped rather than relabelled). Both rows get
-# built from exons of the same real locus, so they can end up with
-# identical or near-identical coordinate spans - i.e. exactly the
-# "duplicate entries with matching distributions" symptom.
-# Fixed by resolving gene_name once per gene_id, from every line in the
-# gtf that has one, before the per-line fallback ever runs - so a gene
-# only ends up nameless (and only then subject to -U) if it truly has no
-# gene_name anywhere in the whole file, not just on the line being read.
-# --------------------------------------------------------------------------
+
 awk '{
     gid=""; n="";
     for (I=1; I<NF; I++) {
@@ -855,27 +254,7 @@ awk -F "\t" '$5 == "cds"' "${gtfname}"_gtf.bed | bedtools sort \
     | bedtools merge -s -c 4,5,6,7 -o distinct,distinct,distinct,distinct \
     | awk -F "\t" '{OFS="\t"; print $1,$2,$3,$4,"CDS",$6,$7}' > "${gtfname}"_cds.bed
 
-# --------------------------------------------------------------------------
-# creating 3utr / 5utr
-#
-# The old approach took the widest possible span across ALL transcript
-# isoforms (earliest start_codon to latest stop_codon) and called that the
-# UTR. On real multi-isoform genes that span massively overshoots the true
-# UTR and mostly overlaps CDS territory from other isoforms - which is why
-# forcing "CDS beats UTR" on it wiped out UTRs almost everywhere. Building
-# it that way was the actual bug, not the overlap-resolution step.
-#
-# Correct approach: take the union of all real exonic bases (across every
-# isoform), subtract the union of all CDS bases (across every isoform).
-# What's left is genuine non-coding exonic sequence, and it can never
-# overlap CDS because it's built by removing CDS directly. Each remaining
-# piece is then called 5utr/3utr/exon depending on where it sits relative
-# to the gene's overall CDS span (its "envelope") and strand. A piece that
-# falls inside the CDS envelope but isn't CDS itself (e.g. a cassette exon
-# that's coding in one isoform, skipped in another) is ambiguous - it gets
-# labelled "exon" rather than guessed at, since Paralus already treats
-# "exon" as its own top-priority annotation.
-# --------------------------------------------------------------------------
+
 echo "creating 3utr / 5utr"
 awk -F "\t" '$5 == "exon"' "${gtfname}"_gtf.bed | bedtools sort \
     | bedtools merge -s -c 4,5,6,7 -o distinct,distinct,distinct,distinct > "${gtfname}"_exon_merged.bed
@@ -1039,18 +418,7 @@ done
 bedtools sort -i "${gtfname}"_Paralus.bed | uniq | sed 's/,/|/g' > "${gtfname}"_Paralus_sorted.bed
 mv "${gtfname}"_Paralus_sorted.bed "${gtfname}"_Paralus.bed
 
-# --------------------------------------------------------------------------
-# PARalus 1.8.3: even with gene_name resolved once per gene_id (1.8.0), two
-# genuinely different gene_ids can still end up with the exact same
-# chrom/start/end/strand (e.g. a named gene and a separate unnamed/ENSG-only
-# annotation covering the identical interval - only shows up with -U, since
-# without -U there's no ENSG-named row to begin with). When that happens,
-# prefer the named entry and drop the ENSG-only duplicate. If every row
-# sharing that exact interval+strand is ENSG-only (no named alternative
-# exists for it), keep them all rather than deleting information. Keyed on
-# strand as well as coordinates so two truly different antisense genes that
-# happen to overlap the same interval are never merged into one.
-# --------------------------------------------------------------------------
+
 awk -F "\t" '
     {
         key = $1 FS $2 FS $3 FS $6
@@ -1070,26 +438,7 @@ awk -F "\t" '
 ' "${gtfname}"_Paralus.bed | bedtools sort > "${gtfname}"_Paralus_dedup.bed
 mv "${gtfname}"_Paralus_dedup.bed "${gtfname}"_Paralus.bed
 
-# --------------------------------------------------------------------------
-# PARalus 1.8.5: the 1.8.3 fix above only catches the case where a named
-# gene and its ENSG-only duplicate survive as two SEPARATE rows at the same
-# interval. Real annotations can also carry two entries (a gene and a
-# separate transcript-level or duplicate record) with IDENTICAL exon
-# coordinates - which the exon-merging bedtools merge steps earlier in
-# Trierarch (same-strand, touching/overlapping intervals) had already
-# concatenated into ONE row via -o distinct on the name column, before the
-# 1.8.3 fix ever runs. That produces a single combined name like
-# "TP53|ENSG00000141510" (comma -> pipe conversion happens right after
-# that merge), which 1.8.3's exact-duplicate-ROW check never sees, since
-# there's only one row by then. Cleaned up separately here: for any row
-# whose name is a pipe-separated list, if at least one entry is a real
-# gene name, drop the ENSG-prefixed entries from that list and keep the
-# real name(s). A list that's ENSG-only (no real name anywhere in it) is
-# left untouched, same principle as 1.8.3 - never delete the only
-# annotation a locus has. A list of two or more genuinely different real
-# gene names (e.g. two named genes that legitimately overlap) is also left
-# untouched - only ENSG-prefixed tokens ever get dropped, nothing else.
-# --------------------------------------------------------------------------
+
 awk -F "\t" 'BEGIN{OFS="\t"}
 {
     n = split($4, toks, "|")
@@ -1128,39 +477,7 @@ echo
 #################################
 }
 
-# --------------------------------------------------------------------------
-# PARalus 1.7.5: HISAT2 support (-H)
-#   STAR's genome index needs to sit entirely in RAM (~30 GB for human
-#   hg38), which rules it out on most 16 GB Mac laptops. HISAT2 uses an
-#   FM-index instead (~4-5 GB for hg38, to build and to align against) and
-#   is offered here as a drop-in second engine: -H switches every alignment
-#   step in Paralus from STAR to HISAT2, with -x/-e then expected to be a
-#   HISAT2 index basename (built with hisat2-build) instead of a STAR
-#   genomeDir. Everything downstream of alignment (bam naming, T-to-C
-#   extraction, clustering, annotation) is unchanged and unaware of which
-#   aligner actually ran.
-#
-#   These two functions are the only place either aligner is invoked.
-#   The STAR branch of each is exactly the STAR command earlier versions
-#   ran inline for that step (same flags, same behaviour) - only wrapped
-#   in a function so a single -H check can dispatch to HISAT2 instead of
-#   duplicating that dispatch at all fifteen call sites.
-#   --no-spliced-alignment/--no-softclip mirror the --alignIntronMax 1
-#   /--alignEndsType EndToEnd used on the STAR side: no spliced alignment,
-#   no soft-clipping, so both engines are doing the same kind of alignment.
-#   --no-unal keeps unmapped reads out of the bam, matching STAR's default.
-#   -k 1 mirrors STAR's --outSAMmultNmax 1 --outMultimapperOrder Random:
-#   without it, HISAT2 reports extra loci per read as secondary (256/272)
-#   alignments that STAR never produces here, inflating both the bam and
-#   every downstream read count. --score-min L,0,-0.6 loosens HISAT2's
-#   scoring floor (default L,0,-0.2 is tuned for ordinary RNA-seq and is
-#   too strict for PAR-CLIP's crosslink-induced mismatches/gaps).
-#   --rdg/--rfg 3,1 (default 5,3) lowers the cost of a single-nt gap, a
-#   common crosslink-truncation signature that the default gap penalty
-#   alone was enough to reject outright, independent of mismatch scoring.
-#   Verified against real data as of 1.7.9 - see the changelog above for
-#   the recovery numbers this was checked against.
-# --------------------------------------------------------------------------
+
 prealign_rrna() {
 	# $1 = reads to pre-map against the rRNA reference. Non-rRNA reads are
 	# written to rRNA_depleted_"${name}"_trimmed.fasta either way - every
@@ -1224,7 +541,7 @@ fi
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   cat << 'EOF'
   
-          ||
+              ||
        ##################
        ##################   
        ###Paralus1.8.7###
@@ -1233,8 +550,8 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
       ##################
                ||
                ||
-              \o/
-               |
+               ||
+               ||
    &    __@_/  ||                &
    \ \   ||    ||               //
     \__\_/\___@___@___@___@____//   
@@ -1439,10 +756,7 @@ if [ -n "${missing}" ]; then
     exit 1
 fi
 
-# v1.8.7: -i accepts a full path. file_dir is taken from the path before it
-# is cut down to the file name, so the cd further below moves into the
-# input's folder and all outputs are written there. With no path, dirname
-# returns "." and the run stays in the current folder as before.
+
 file_dir=$(dirname "${input}")
 input=$(basename "${input}")
 name=${input%.fast*}
@@ -1454,21 +768,7 @@ ext="${input##*.}"
 genomedir=$(dirname "${index}")
 rRNA_genomedir=$(dirname "${rRNA_genome}")
 
-# --------------------------------------------------------------------------
-# PARalus 1.8.4: -i and -x are required for an actual Paralus run, but this
-# check used to happen only after the (potentially ~1 minute) -G/Trierarch
-# annotation build below, and even then it only checked the annotation and
-# the genome index/input file NOT being present - it never distinguished
-# "you gave -x/-i but they're wrong" from "you never gave -x/-i at all",
-# so a run with only -G (and no -i/-x) ran Trierarch to completion and only
-# THEN failed, with a confusing "genome index not found at .1.ht2" message
-# for an -x that was simply never given. Checked here instead, before
-# anything expensive runs, with a specific message when -G/-A were given
-# but -i/-x weren't: that combination almost always means "I only wanted
-# to build the annotation," which is exactly what --trierarch standalone
-# is for and doesn't need -i/-x at all - so this points there directly
-# instead of failing generically or wasting a Trierarch run first.
-# --------------------------------------------------------------------------
+
 if [ -z "${input}" ] || [ -z "${index}" ]; then
     if [ -n "${raw_gtf}" ] || [ -n "${annotation}" ]; then
         echo "error:
@@ -1512,16 +812,6 @@ if [ -n "${trierarch_miRNA_DB}" ]; then
 fi
 
 if [ -z "${annotation}" ] && [ -n "${raw_gtf}" ]; then
-    # PARalus 1.8.2: -G used to try to cache the built bed and reuse it on a
-    # later run (by gtf/db mtime, then by a flag-matching stamp after 1.8.1).
-    # Removed entirely - it was a real source of confusion (silently serving
-    # an annotation built with different flags than the one just requested)
-    # and it was solving a problem that already has a direct answer: -A. If
-    # you don't want Trierarch to rerun, build the bed once (standalone
-    # --trierarch or a first -G run) and pass it back in with -A - that's
-    # exactly what -A is for, no implicit caching needed. -G now always runs
-    # Trierarch fresh, every time, so what you see is always exactly what
-    # the flags on this invocation produce.
     expected_annotation="${raw_gtf%.gtf}_Paralus.bed"
     echo "-G given: building annotation from ${raw_gtf} with Trierarch (about a minute)..."
     trierarch_call=(-G "${raw_gtf}")
@@ -1558,14 +848,7 @@ if [ -f "${annotation}" ]; then
     fi
 fi
 
-# --------------------------------------------------------------------------
-# PARalus 1.7.5: index presence is checked differently per aligner (STAR's
-# genomeDir always contains a SAindex file; a HISAT2 index is a set of
-# <basename>.N.ht2/.ht2l files, no directory) - resolved once here into two
-# plain booleans so the rest of the script (this validation block and every
-# rRNA-genome branch further below) doesn't need to know which aligner -H
-# selected.
-# --------------------------------------------------------------------------
+
 if [ "${use_hisat}" = "1" ]; then
     main_index_ok=0
     { [ -f "${index}.1.ht2" ] || [ -f "${index}.1.ht2l" ]; } && main_index_ok=1
@@ -1773,9 +1056,7 @@ elif [[ "${rrna_index_ok}" -eq 1 && $ext == "gz" && ${#three_adapt} -gt 0 && $um
   	align_genome rRNA_depleted_"${name}"_trimmed.fasta
 		echo "done!" >> "${name}".log
 
-# v1.8.7: uncompressed fastq with adapters but no UMIs, or with neither, was
-# missing (only fastq.gz had these). Same steps as the fastq.gz branches,
-# reading the fastq directly instead of through gzip -dc
+
 elif [[ "${rrna_index_ok}" -eq 0 && $ext == "fastq" && ${#three_adapt} -gt 0 && $umis -eq 0 ]]
 	then
 		echo "You have a fastq file, provided adapters and did not provide UMIs and rRNA genome"
@@ -1848,10 +1129,7 @@ if [ "${clip_mode}" -eq 0 ]; then
 ## get TtoC bam and index it ##
 ###############################
 
-# PARalus 1.7.5: the MD tag used to be assumed to always land in column 13
-# (true only for STAR's fixed --outSAMattributes NH MD HI AS ordering); now
-# located by its MD:Z: prefix instead, wherever calmd puts it, so this also
-# works with HISAT2's own (differently-ordered) tag set under -H.
+
 samtools calmd -e "${name}".Aligned.sortedByCoord.out.bam "${genomefasta}" | awk -F "\t" '{ md=""; for (i=12;i<=NF;i++) if ($i ~ /^MD:Z:/) { md=$i; break } } (($1 ~"^@") || ($2 == "0" || $2 == "256") && ($10 ~ "C" && md ~ "T")) || (($1 ~"^@") || ($2 == "16" || $2 == "272") && ($10 ~ "G" && md ~ "A"))' | samtools view -Sbh --threads "$threads" - | samtools sort --threads "$threads" - 2>> "${runlog}" > "${name}".aligned_TtoC.bam
 
 
@@ -2027,8 +1305,7 @@ function hash(s,   h, i, n, c) {
 { if ((hash($4) % 100000) / 100000.0 <= $16) print $4 }' \
 	| sort -u > "${name}"_sqrt_kept_names.txt
 
-# v1.7.4: The below line replaced "samtools view -N "${name}"_sqrt_kept_names.txt "${name}".aligned_NonNormal.bam >> "${name}".aligned_sqrt.sam" which only works with samtools 1.12 or later
-# v1.8.6: -h and the /^@/ match removed - the header is already written above by "samtools view -H", so keeping them wrote every @SQ line twice
+
 samtools view "${name}".aligned_NonNormal.bam | awk 'NR==FNR{names[$1]=1; next} ($1 in names)' "${name}"_sqrt_kept_names.txt - >> "${name}".aligned_sqrt.sam
 
 rm -f "${name}"_sqrt_kept_names.txt
@@ -2095,25 +1372,7 @@ cat "${name}".groups_normal.bed "${name}".groups_normal_sqrt.bed | bedtools sort
 # annotate peaks using bedtools intersect #
 ###########################################
 
-# --------------------------------------------------------------------------
-# v1.6: this whole block was rebuilt. The old approach (-wa -wb -loj, then
-# bedtools merge -o distinct independently on the gene/annotation/biotype
-# columns) resolved each of those three columns separately, with no
-# guarantee they stayed matched to the same underlying feature. A cluster
-# hitting GENE_A (exon, protein_coding) and GENE_B (intron, tRNA) could end
-# up reported as GENE_B + exon + tRNA - a combination that matches neither
-# real feature. It also never captured overlap length, so ties between two
-# same-tier hits were broken arbitrarily (whichever bedtools happened to
-# list first), not by which one the cluster actually mostly sits on.
-#
-# Fixed by: capturing overlap-bp per hit (-wo), packing gene:annotation:
-# biotype:overlap_bp into ONE field per hit so it survives the merge intact,
-# then resolving in a single pass that picks one whole winning hit - ranked
-# by the same biotype/annotation priority tiers as before, with overlap-bp
-# only as a tiebreaker within a tied tier. (-wo and -loj can't be combined
-# in this bedtools version - -loj's no-hit behavior is replicated by hand
-# via a separate -v pass for clusters with zero overlaps.)
-# --------------------------------------------------------------------------
+
 
 bedtools intersect -s -wo -a "${name}"_filt.groups -b "${annotation}" > "${name}"_hits.tmp
 bedtools intersect -s -v -a "${name}"_filt.groups -b "${annotation}" \
