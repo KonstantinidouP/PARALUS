@@ -20,6 +20,7 @@ PARALUS is a bash-based pipeline for the analysis of PAR-CLIP and CLIP sequencin
 - [Performance & Accessibility](#performance--accessibility)
 - [Dependencies](#dependencies)
 - [Quick Start](#quick-start)
+- [Updating PARALUS](#updating-paralus)
 - [Parameters](#parameters)
 - [Output files](#output-files)
 - [Example Output](#example-output)
@@ -99,37 +100,32 @@ For step-by-step installation instructions across different environments (Apple 
 
 ### Step 1 - Install PARALUS and its dependencies
 
-Clone the repository and add it to your `PATH`:
+Go to the folder where you want to keep PARALUS and clone the repository:
 
 ```bash
 git clone https://github.com/KonstantinidouP/PARALUS.git
 cd PARALUS
-echo "# Added for PARALUS - delete this line and the next one to undo" >> ~/.bashrc
-echo "export PATH=\"$PWD:\$PATH\"" >> ~/.bashrc
-source ~/.bashrc
 ```
 
-❗ On a Mac, use `~/.zshrc` instead of `~/.bashrc`.
-
-Check that it worked:
+Then run the installer. It checks which tools you already have, asks before installing anything, and creates a conda environment called `paralus` with all dependencies and the `paralus` command:
 
 ```bash
+bash install_paralus.sh
+```
+
+When it finishes, reload your shell settings (or close the terminal window and open a new one). Then activate the environment and check that it worked:
+
+```bash
+source ~/.bashrc          # on a Mac: source ~/.zshrc
+conda activate paralus
 paralus --help
 ```
 
-Then install the dependencies into a conda environment called `paralus`. The installer (`install_dependencies.sh`) checks which tools you already have and asks before installing anything:
+Activate the environment before each run.
 
-```bash
-bash install_dependencies.sh
-```
+**HPC clusters with modules.** If you load the dependencies as modules instead of using conda, run `bash install_paralus.sh --launcher-only`. This adds the `paralus` command to your shell without installing anything else. Then run `source ~/.bashrc` once, and load the modules before each run.
 
-Activate the environment before each run:
-
-```bash
-conda activate paralus
-```
-
-For manual installation, HPC clusters and other details, see [INSTALLATION.md](INSTALLATION.md).
+To install into a conda environment you already have, for manual installation, and for other details, see [INSTALLATION.md](INSTALLATION.md).
 
 ### Step 2 - Prepare the reference files (once per genome)
 
@@ -143,7 +139,7 @@ If you don't have them yet, see [REFERENCE_SETUP.md](REFERENCE_SETUP.md) for dow
 
 ### Step 3 - Run PARALUS
 
-Make sure you have activated the `paralus` environment (`conda activate paralus`), or loaded the modules if you're on an HPC cluster. If you haven't installed the dependencies yet, see [Step 1](#step-1---install-paralus-and-its-dependencies).
+Make sure you have activated the `paralus` environment (`conda activate paralus`), or loaded the modules if you're on an HPC cluster. If you haven't installed PARALUS yet, see [Step 1](#step-1---install-paralus-and-its-dependencies).
 
 **Option A - if you've already built the annotation with Trierarch (pass it with `-A`):**
 
@@ -180,6 +176,27 @@ paralus \
 ```
 
 Option B is the simplest for a first or single run, but each run with `-G` builds the annotation BED from the GTF again, even if it was built in an earlier run. To save time when analysing more samples from the same organism, build it once with Trierarch (see [REFERENCE_SETUP.md](REFERENCE_SETUP.md#2-gene-annotation)) and reuse it with `-A` (Option A).
+
+---
+
+## Updating PARALUS
+
+To see which version you have, activate the environment (`conda activate paralus`) and run `paralus` with no options. The first line shows the version (e.g. `PARalus v1.8.7`).
+
+To update, go to your PARALUS folder and pull the latest version:
+
+```bash
+cd /path/to/PARALUS
+git pull
+```
+
+The `paralus` command will use the new version from your next run.
+
+If the new version needs new dependencies (noted in its release notes), or if you have moved the PARALUS folder, run the installer again from inside the folder:
+
+```bash
+bash install_paralus.sh
+```
 
 ---
 
@@ -280,7 +297,7 @@ PARALUS finished successfully
 PARALUS/
 ├── paralus_1.8.7.sh         # Main pipeline script (includes Trierarch)
 ├── paralus                  # Launcher: runs the pipeline script as `paralus`
-├── install_dependencies.sh  # Dependency installer (Linux and Apple Silicon Mac)
+├── install_paralus.sh       # Installer: dependencies and the paralus command
 ├── INSTALLATION.md          # Detailed dependencies installation instructions for all environments
 ├── REFERENCE_SETUP.md       # Reference genome, annotation and rRNA index setup
 ├── PARALUS_manual.md        # Extended manual with full parameter reference and troubleshooting
@@ -294,7 +311,7 @@ PARALUS/
 ## Citation
 
 > **[Manuscript in preparation]**
-> Konstantinidou P, Benhalevy D, Sarshad AA, Anastasakis DG. PARALUS: A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis. *Journal TBD*, year.
+> Konstantinidou P, Sarshad AA, Benhalevy D, Anastasakis DG. PARALUS: A Lightweight Unix Shell Pipeline for PAR-CLIP and CLIP Sequencing Data Analysis. *Journal TBD*, year.
 
 If you use PARALUS in your work, please cite the above once published.
 
